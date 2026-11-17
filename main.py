@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 import uvicorn
+from routers import sessions # o 'session', a seconda di come l'hai chiamato
 
 # Inizializziamo l'app FastAPI con i metadati per la Swagger UI
 app = FastAPI(
@@ -8,6 +9,7 @@ app = FastAPI(
     version="0.1.0"
 )
 
+app.include_router(sessions.router, prefix="/api/session", tags=["Session"])
 # Endpoint base di test (Root)
 @app.get("/")
 def read_root():
