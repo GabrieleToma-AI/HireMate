@@ -1,5 +1,17 @@
 # 📋 HIREMATE - RECAP COMPLESSIVO & NEXT STEPS
 
+## 📂 HIREMATE - ARCHITETTURA E CODICE (GenAI Core)
+
+### 🏗️ Il Flusso di Lavoro (Come si parla tra loro)
+Per capire i file, immagina il viaggio di una richiesta:
+
+1. Il frontend (o Swagger) chiama un URL (`/api/session/start`).
+2. Il file `main.py` riceve la chiamata e la passa al `routers/sessions.py`.
+3. Il router valida i dati e chiama l'`agenti/interviewer.py`.
+4. L'Interviewer prende le materie da `corsi.py`, prepara il prompt e chiama `agenti/llm.py`.
+5. `llm.py` contatta FreeLLMAPI o Gemini e restituisce la domanda.
+
+
 ## 🎯 Punto di Arrivo Attuale
 Il backend GenAI di HireMate è **funzionante e testato** fino alla logica di valutazione (`evaluator.py`). L'infrastruttura è solida, resiliente e pronta per accogliere i moduli successivi.
 
@@ -20,10 +32,9 @@ Per rispettare la deadline e non creare conflitti su Git, dividiamo il lavoro in
 
 ### 👨‍💻 Stream 1: Tu (GenAI Core & Orchestrazione)
 *Il tuo focus è completare la logica di colloquio.*
-*   **File da creare**: `agenti/interviewer.py` e `agenti/reporter.py`.
+*   **File da creare**: `agenti/reporter.py`.
 *   **Task**:
-    1.  **Interviewer**: Scrivere il prompt che usa i dati del corso e la soft skill per generare domande HR. Testare in isolamento (`test_interviewer.py`).
-    2.  **Reporter**: Scrivere il prompt che prende l'array di valutazioni dell'Evaluator e restituisce il feedback finale aggregato.
+    1.  **Reporter**: Scrivere il prompt che prende l'array di valutazioni dell'Evaluator e restituisce il feedback finale aggregato.
 *   **Deliverable SAL (Giorno 14)**: Mostrare al SAL la catena completa: Interviewer genera domanda -> Evaluator valuta risposta -> Reporter crea feedback finale.
 
 ### 👨‍💻 Stream 2: Collega 1 (Data & CV Pipeline)
