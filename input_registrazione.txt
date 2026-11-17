@@ -1,0 +1,8 @@
+simulato. questo dizionario serve a far funzionare gli agenti.
+
+
+"profilo_soft_skill": {
+  "ansia_principale": "Restare senza parole",
+  "stile_gestione_problemi": "Mi blocco e mi faccio prendere dal panico",
+  "timore_critico": "Non ho abbastanza esperienza tecnica"
+}

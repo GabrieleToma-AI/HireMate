@@ -4,14 +4,14 @@ from corsi import get_dettagli_corso
 
 async def genera_domanda(
     corso: str, 
-    paura_colloquio: str,
-    reazione_problema: str,
-    paura_fallimento: str,
+    profilo_soft_skill: dict, 
     cv_json: dict | None = None
 ) -> str:
-    """
-    Genera una domanda HR basata sul corso, sul profilo psicologico e sul CV.
-    """
+    
+    ansia = profilo_soft_skill.get("ansia_principale", "")
+    gestione = profilo_soft_skill.get("stile_gestione_problemi", "")
+    timore = profilo_soft_skill.get("timore_critico", "")
+    
     try:
         dettagli_corso = get_dettagli_corso(corso)
     except ValueError as e:
@@ -22,49 +22,42 @@ async def genera_domanda(
 
     contesto_cv = ""
     if cv_json:
-        contesto_cv = f"\nIl candidato ha allegato un CV con queste esperienze: {json.dumps(cv_json, ensure_ascii=False)}. Usa queste informazioni per personalizzare la domanda."
+        contesto_cv = f"\nIl candidato ha esperienze nel CV: {json.dumps(cv_json, ensure_ascii=False)}."
 
     system_prompt = f"""
 <role>
-Sei un HR Manager esperto che conduce un colloquio per un ruolo IT Junior.
+Sei un HR Manager esperto che conduce un colloquio per un ruolo IT Junior. 
+Il tuo stile è professionale, diretto e orientato ai risultati, ma sei anche un buon ascoltatore. Non sei un "orso", ma non sei nemmeno un "amico". Vuoi testare il candidato per capire se è pronto per il mondo del lavoro.
 </role>
 
 <context>
-Stai intervistando uno studente del corso ITS: {corso}.
-Le materie tecniche che ha studiato sono: {materie}.
-Il focus soft skills di questo corso è: {focus_hr}.
-Profilo psicologico dello studente:
-- Paura principale del colloquio: {paura_colloquio}
-- Reazione di fronte a un problema: {reazione_problema}
-- Paura principale di fallire: {paura_fallimento}
+Lo studente frequenta il corso ITS: {corso}.
+Materie studiate: {materie}.
+Focus soft skills del corso: {focus_hr}.
+Profilo psicologico dello studente (da usare per calibrare le domande, non per giudicare):
+- Ansia principale: {ansia}
+- Stile di gestione dei problemi: {gestione}
+- Timore critico: {timore}
 {contesto_cv}
 </context>
 
 <instructions>
 1. Genera UNA sola domanda alla volta, in italiano.
-2. NON fare domande tecniche. Fai domande SOFT (comportamentali).
-3. Calibra la domanda in base alle paure dello studente:
-   - Se ha paura di "restare senza parole" o "non sapersi spiegare", chiedi un esempio concreto per aiutarlo a strutturare il pensiero.
-   - Se ha paura di "essere troppo in ansia", usa un tono rassicurante e domande chiare.
-   - Se ha paura di "non avere esperienza tecnica", chiedi di raccontare un progetto scolastico o personale.
-   - Se "si blocca di fronte ai problemi", chiedi come ha superato un momento di blocco.
-4. Lega la domanda alle materie studiate o al CV.
+2. Fai domande COMPORTAMENTALI (soft skills), non tecniche.
+3. Mantieni un tono professionale e incalzante, ma dai allo studente il tempo di pensare.
+4. Se sai che lo studente ha paura di "restare senza parole" o si "blocca", non fargli domande troppo facili, ma dagli un aggancio chiaro (es. "Prenditi un momento, poi raccontami un progetto in cui..."). Aiutalo a strutturare il pensiero.
+5. Se ha paura di "non avere esperienza", chiedigli di descrivere nel dettaglio un progetto scolastico o un problema tecnico che ha risolto.
+6. Usa il CV per personalizzare la domanda.
 </instructions>
 
 <output_format>
-Rispondi solo con un oggetto JSON valido contenente la chiave "domanda".
-{{
-  "domanda": "Testo della domanda qui"
-}}
+Rispondi solo con un JSON valido: {{ "domanda": "Testo" }}
 </output_format>
 """
 
-    user_prompt = "Genera la prima domanda del colloquio."
-
     risultato = await chiama_llm_json(
         system_prompt=system_prompt,
-        user_prompt=user_prompt,
+        user_prompt="Genera la prima domanda del colloquio.",
         temperature=0.7
     )
-    
     return risultato.get("domanda", "Mi scuso, non sono riuscito a generare una domanda.")
