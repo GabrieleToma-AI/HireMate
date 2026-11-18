@@ -1,63 +1,149 @@
-# 📋 HIREMATE - RECAP COMPLESSIVO & NEXT STEPS
+# 📋 HIREMATE — Backend GenAI
 
-## 📂 HIREMATE - ARCHITETTURA E CODICE (GenAI Core)
+Simulatore di colloqui HR per studenti ITS ICT Piemonte. Il backend gestisce la profilazione, le domande, la valutazione delle risposte e il report finale gamificato.
 
-### 🏗️ Il Flusso di Lavoro (Come si parla tra loro)
-Per capire i file, immagina il viaggio di una richiesta:
-
-1. Il frontend (o Swagger) chiama un URL (`/api/session/start`).
-2. Il file `main.py` riceve la chiamata e la passa al `routers/sessions.py`.
-3. Il router valida i dati e chiama l'`agenti/interviewer.py`.
-4. L'Interviewer prende le materie da `corsi.py`, prepara il prompt e chiama `agenti/llm.py`.
-5. `llm.py` contatta FreeLLMAPI o Gemini e restituisce la domanda.
-
-
-## 🎯 Punto di Arrivo Attuale
-Il backend GenAI di HireMate è **funzionante e testato** fino alla logica di valutazione (`evaluator.py`). L'infrastruttura è solida, resiliente e pronta per accogliere i moduli successivi.
-
-## ✅ Cosa Abbiamo Fatto (Stato dell'Arte)
-1. **Setup Infrastruttura**: Creata l'app FastAPI (`main.py`), configurato l'ambiente virtuale (`venv`) e le dipendenze (`requirements.txt`).
-2. **Knowledge Base Statica**: Creato `corsi.py` con i 14 corsi dell'ITS ICT Piemonte, le relative materie e i focus HR. Inclusa la gestione degli errori per corsi inesistenti.
-3. **Architettura LLM a Doppio Fallback**: Implementato `agenti/llm.py` con un sistema a catena:
-   - *1° Try*: FreeLLMAPI (modello `auto:fastest`, timeout 5s).
-   - *2° Try*: Gemini (con logica interna di sicurezza: se il modello Flash primario fallisce per quota, tenta il Flash-Lite).
-4. **Agente Evaluator**: Implementato `agenti/evaluator.py`. Usa un prompt XML avanzato che valuta Chiarezza, Struttura STAR ed Esempi Concreti, restituendo JSON, suggerimenti e una better_answer.
-5. **Testing di Sistema**: Superata la suite `test_sistema.py`. Abbiamo validato la connessione a Gemini (la chiave funziona), il parsing JSON e la resilienza del fallback.
+- **Lingua:** italiano.
+- **Target:** studenti junior IT (tono professionale, diretto, non "coccoloso").
+- **Team:** 3 AI engineer (Python) + 3 AR/VR & game (frontend).
+- **Stack:** Python 3.14, FastAPI, Pydantic, Supabase (in arrivo), Gemini `gemini-3.5-flash-lite`, Azure TTS (Collega 2).
 
 ---
 
-## 🚀 Cosa Va Fatto (Lavoro Parallelo per 3 AI Engineers)
+## 🏗️ Struttura
 
-Per rispettare la deadline e non creare conflitti su Git, dividiamo il lavoro in 3 stream paralleli. **Ognuno lavora solo nei propri file.**
-
-### 👨‍💻 Stream 1: Tu (GenAI Core & Orchestrazione)
-*Il tuo focus è completare la logica di colloquio.*
-*   **File da creare**: `agenti/reporter.py`.
-*   **Task**:
-    1.  **Reporter**: Scrivere il prompt che prende l'array di valutazioni dell'Evaluator e restituisce il feedback finale aggregato.
-*   **Deliverable SAL (Giorno 14)**: Mostrare al SAL la catena completa: Interviewer genera domanda -> Evaluator valuta risposta -> Reporter crea feedback finale.
-
-### 👨‍💻 Stream 2: Collega 1 (Data & CV Pipeline)
-*Il focus è l'infrastruttura dati e l'elaborazione documenti.*
-*   **File da creare**: `database/supabase_client.py` e `agenti/cv_parser.py`.
-*   **Task**:
-    1.  **Supabase**: Creare le tabelle (`users`, `sessions`, `turns`) e le funzioni Python per salvare/leggere i dati (es. `salva_turno()`).
-    2.  **CV Parser**: Usare `pypdf` per estrarre il testo dal PDF e usare `llm.py` per trasformarlo in JSON strutturato (Competenze, Progetti).
-*   **Deliverable SAL (Giorno 14)**: Mostrare a schermo un CV caricato che viene estratto e trasformato in JSON, e una sessione salvata nel database.
-
-### 👨‍💻 Stream 3: Collega 2 (Audio & API Routing)
-*Il focus è l'interfaccia web e l'output fisico.*
-*   **File da creare**: `agenti/tts.py` e `routers/session.py`.
-*   **Task**:
-    1.  **Azure TTS**: Configurare l'SDK Python di Azure. Creare una funzione `genera_audio(testo)` che restituisce l'mp3 + l'array di visemi.
-    2.  **FastAPI Routers**: Creare l'endpoint `/api/session/start` e `/api/session/turn`. Inizialmente usare dati mock, per poi collegare i vostri moduli.
-    3.  **Contratto API**: Definire i modelli Pydantic per la risposta JSON (quella con `audioUrl`, `visemes`, `gesture`).
-*   **Deliverable SAL (Giorno 14)**: Mostrare l'audio generato e la Swagger UI con gli endpoint che rispondono (anche se con dati finti).
+| File | Cosa fa |
+|---|---|
+| `main.py` | Crea FastAPI, CORS, include i router. |
+| `corsi.py` | 14 corsi ITS con materie e focus HR; `get_dettagli_corso()`. |
+| `profilo.py` | Le 3 liste della profilazione + `METRICA_PER_PAURA` + soglia 7.5. |
+| `agenti/llm.py` | Wrapper LLM: FreeLLMAPI → Gemini Lite, timeout, 2 retry, JSON robusto. |
+| `agenti/interviewer.py` | Genera la domanda (prima o successiva, con `cronologia`). |
+| `agenti/evaluator.py` | Valuta la trascrizione: chiarezza, STAR, esempi, suggerimento, better answer. |
+| `agenti/reporter.py` | Report finale: overall, stats, paura superata, prossime paure, badges. |
+| `agenti/cv_parser.py` | Estrae testo dal PDF e lo trasforma in JSON. |
+| `routers/sessions.py` | Modelli Pydantic e endpoint `/start`, `/end`; contratti `/turn`. |
+| `routers/cv.py` | Endpoint `/api/cv/parse` (PDF → JSON). |
+| `test_*.py` | Test di sistema e integrazione. |
+| `processi_spiegati/` | Spiegazioni didattiche e recap. |
 
 ---
 
-## 📌 Regole d'Oro per il Lavoro in Parallelo
-1. **Mai lavorare sul ramo `main`**: Ognuno crea il suo ramo (`feature/interviewer`, `feature/database`, `feature/api`).
-2. **File separati**: Non toccare i file degli altri. Se hai bisogno di una funzione, chiedila al proprietario del file.
-3. **Il Contratto API**: Il team AR/VR ha bisogno del JSON con `audioUrl` e `visemes` per iniziare a lavorare sull'avatar. Il prima possibile, Collega 2 deve condividere questo contratto.
-4. **Testing**: Ognuno testa i propri file in isolamento (con script `test_nomefile.py`) prima di fare il merge sul `main`.
+## 🧭 Profilazione (3 domande)
+
+**Q2 — Ansia** (`ansia_principale`): *"Cosa ti spaventa di più all'idea di fare un colloquio?"*
+1. Restare senza parole
+2. Non sembrare abbastanza preparato tecnicamente
+3. Fare una figuraccia con il recruiter
+4. Non saper parlare di me stesso
+
+**Q3 — Reazione ai problemi** (`stile_gestione_problemi`): *"Quando ti trovi di fronte a un problema difficile, come reagisci?"*
+1. Mi blocco e mi faccio prendere dal panico
+2. Chiedo subito aiuto a un collega o a un tutor
+3. Faccio ricerche infinite finché non trovo la soluzione
+4. Mi prendo una pausa e ci riprovo con calma
+
+**Q4 — Timore di fallimento** (`timore_critico`): *"Se il colloquio andasse male, quale pensi sarebbe il motivo principale?"*
+1. Non ho saputo spiegare bene le mie competenze
+2. Ero troppo in ansia e non riuscivo a concentrarmi
+3. Non ho abbastanza esperienza tecnica per il ruolo
+4. Non mi sono preparato abbastanza sull'azienda
+
+La validazione è **stretta**: un valore fuori lista restituisce `422`.
+
+---
+
+## 🎯 Regola "paura superata"
+
+| Paura | Metrica |
+|---|---|
+| Restare senza parole | `chiarezza` |
+| Non sembrare abbastanza preparato tecnicamente | `esempi_concreti` |
+| Fare una figuraccia con il recruiter | `struttura_star` |
+| Non saper parlare di me stesso | `chiarezza` |
+
+- La paura è superata quando **la metrica specifica** arriva a **7.5/10** (non l'overall).
+- **Sticky:** una volta superata per la stessa paura, resta superata.
+- Se la paura cambia, il flag riparte da `false`.
+- `prossime_paure` contiene le altre 3 paure della Domanda 2.
+
+---
+
+## 🔌 API
+
+### `POST /api/cv/parse`
+Multipart con `file` PDF (max 5 MB) → `{"cv_json": {"competenze": [...], "progetti": [...]}}`.
+
+### `POST /api/session/start`
+```json
+{
+  "corso": "Cyber Security Specialist",
+  "profilo_soft_skill": {
+    "ansia_principale": "Restare senza parole",
+    "stile_gestione_problemi": "Mi blocco e mi faccio prendere dal panico",
+    "timore_critico": "Non ho abbastanza esperienza tecnica per il ruolo"
+  },
+  "cv_json": {"competenze": ["Python"], "progetti": ["Rete aziendale"]}
+}
+```
+Risposta:
+```json
+{"turnId": "turn-...", "questionText": "...", "audioUrl": null, "visemes": [], "gesture": "explain"}
+```
+
+### `POST /api/session/turn` (da implementare, Collega 2)
+Contratto pronto in `routers/sessions.py`: `TurnRequest` (`corso`, `profilo_soft_skill`, `cv_json`, `domanda`, `trascrizione`, `cronologia`) → `TurnResponse` (`turnId`, `valutazione`, `prossimaDomanda`, `colloquio_terminato`, `audioUrl`, `visemes`, `gesture`).
+Dopo `DOMANDE_PER_COLLOQUIO = 6` domande, `colloquio_terminato = true`.
+
+### `POST /api/session/end`
+```json
+{
+  "corso": "Cyber Security Specialist",
+  "profilo_soft_skill": { "...": "..." },
+  "valutazioni": [{"chiarezza": 8, "struttura_star": 7, "esempi_concreti": 9}],
+  "report_precedente": null
+}
+```
+Risposta: `overall_previous/current`, `stats_previous/current`, `paura_attuale`, `metrica_paura`, `paura_superata`, `prossime_paure`, `badges`, `improvements`, `final_tip`.
+
+> `report_precedente` è **temporaneo**: la fonte di verità sarà Supabase. `/end` non deve fidarsi del client appena il DB sarà pronto.
+
+---
+
+## ⚙️ Setup
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env   # inserisci le chiavi
+python main.py           # http://127.0.0.1:8000/docs
+```
+
+`.env` (non committare): `FREELLMAPI_*`, `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-3.5-flash-lite`, `CORS_ALLOW_ORIGINS`, `LLM_TIMEOUT_SECONDS`.
+
+### Test
+```bash
+python test_reporter.py      # offline, regola paura
+python test_sistema.py       # Gemini + evaluator
+python test_interviewer.py
+python test_int_eval.py
+python test_api_full.py      # richiede il server attivo su :8000
+```
+
+---
+
+## 👥 Divisione del lavoro
+
+- **GenAI core (tu):** `agenti/`, `corsi.py`, `profilo.py`, `main.py`, `routers/`, test.
+- **Collega 1:** Supabase (`users`, `sessions`, `turns`, `fears_history`), auth nickname+PIN (hash bcrypt), `PATCH /api/users/update-fear`, rifinitura `cv_parser.py`.
+- **Collega 2:** endpoint `/turn`, Azure TTS + visemi, salvataggio valutazioni.
+- **Team AR/VR:** UI game-style, avatar, modale "Promozione Paura", report animato.
+
+---
+
+## 🔐 Sicurezza
+
+- `.env` è in `.gitignore` e non è mai stato committato.
+- Le chiavi non vanno mai stampate, incollate o committate.
+- PIN: solo hash bcrypt, mai in chiaro.
+- Il progetto è in OneDrive: attenzione alla condivisione della cartella.

@@ -4,6 +4,11 @@
 # Usiamo un dizionario Python per mappare ogni corso alle sue materie e competenze.
 # Questo dizionario verrà iniettato nei prompt dell'LLM (Context Stuffing).
 
+class CorsoNonValidoError(ValueError):
+    """Il corso richiesto non esiste nel catalogo."""
+    pass
+
+
 CORSI_ITS = {
     # --- Area Programmazione e Sviluppo ---
     "Data Manager": {
@@ -93,6 +98,8 @@ def get_dettagli_corso(nome_corso: str) -> dict:
     solleviamo un errore esplicito per evitare che l'LLM generi domande a caso.
     """
     if nome_corso not in CORSI_ITS:
-        raise ValueError(f"Corso non valido: '{nome_corso}'. Selezionare un corso dal menu.")
+        raise CorsoNonValidoError(
+            f"Corso non valido: '{nome_corso}'. Selezionare un corso dal menu."
+        )
     
     return CORSI_ITS[nome_corso]

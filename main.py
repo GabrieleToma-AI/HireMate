@@ -1,6 +1,10 @@
+import os
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from routers import sessions # o 'session', a seconda di come l'hai chiamato
+
+from routers import cv, sessions  # o 'session', a seconda di come l'hai chiamato
 
 # Inizializziamo l'app FastAPI con i metadati per la Swagger UI
 app = FastAPI(
@@ -9,7 +13,22 @@ app = FastAPI(
     version="0.1.0"
 )
 
+# Il frontend gira su un'altra origine (es. Vite su :5173): senza CORS il browser blocca le chiamate.
+origini = os.getenv(
+    "CORS_ALLOW_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000",
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in origini.split(",") if o.strip()],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(sessions.router, prefix="/api/session", tags=["Session"])
+app.include_router(cv.router, prefix="/api/cv", tags=["CV"])
+
 # Endpoint base di test (Root)
 @app.get("/")
 def read_root():
@@ -31,7 +50,7 @@ def health_check():
     return {
         "engine": "GenAI",
         "database": "Supabase (da collegare)",
-        "llm": "OpenAI/Gemini (da collegare)",
+        "llm": "FreeLLMAPI / Gemini 3.5 Flash-Lite",
         "status": "healthy"
     }
 

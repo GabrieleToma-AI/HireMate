@@ -1,5 +1,5 @@
 import json
-from agenti.llm import chiama_llm_json, LLMError
+from agenti.llm import chiama_llm_json
 
 async def valuta_risposta(
     corso: str, 
@@ -40,6 +40,7 @@ Lo studente leggerà il feedback a fine sessione. Dandogli del tu.
    - Dagli un'azione concreta per superare l'ansia (es. "Usa il metodo STAR per dare una struttura al pensiero").
    - Non essere troppo severo, ma nemmeno troppo permissivo. Sii un coach che vuole farlo migliorare.
 4. Scrivi una **better_answer**: una risposta ideale (60-120 parole), in prima persona, italiano parlato. Non inventare esperienze. Se mancano, usa il segnaposto [un tuo esempio reale].
+5. Sii severo con le risposte povere: se la trascrizione è vuota, incoerente, fuori tema o senza esempi concreti, assegna 1-3. Non premiare lo sforzo o la lunghezza.
 </instructions>
 
 <output_format>
@@ -57,4 +58,14 @@ Rispondi solo con un JSON valido:
 <trascrizione>{trascrizione}</trascrizione>
 """
 
-    return await chiama_llm_json(system_prompt=system_prompt, user_prompt="Esegui la valutazione.", temperature=0.3)
+    risultato = await chiama_llm_json(
+        system_prompt=system_prompt,
+        user_prompt="Esegui la valutazione.",
+        temperature=0.3
+    )
+
+    # I voti devono essere interi tra 1 e 10: l'LLM a volte sfora.
+    for chiave in ("chiarezza", "struttura_star", "esempi_concreti"):
+        risultato[chiave] = max(1, min(10, int(risultato.get(chiave, 1))))
+
+    return risultato

@@ -1,26 +1,28 @@
-import json
 from agenti.llm import chiama_llm_json, LLMError
+from profilo import METRICA_PER_PAURA, PAURE_DISPONIBILI, SOGLIA_METRICA_PAURA
+
 
 async def genera_report_finale(
-    corso: str, 
-    profilo_soft_skill: dict, 
+    corso: str,
+    profilo_soft_skill: dict,
     valutazioni: list[dict],
-    report_precedente: dict | None = None  # <-- NUOVO PARAMETRO
+    report_precedente: dict | None = None
 ) -> dict:
-    
+
     if not valutazioni:
         raise LLMError("Nessuna valutazione disponibile per il report.")
 
     # 1. Calcolo delle medie della sessione ATTUALE
-    media_chiarezza = sum(v.get("chiarezza", 0) for v in valutazioni) / len(valutazioni)
-    media_star = sum(v.get("struttura_star", 0) for v in valutazioni) / len(valutazioni)
-    media_esempi = sum(v.get("esempi_concreti", 0) for v in valutazioni) / len(valutazioni)
+    media_chiarezza = sum(v["chiarezza"] for v in valutazioni) / len(valutazioni)
+    media_star = sum(v["struttura_star"] for v in valutazioni) / len(valutazioni)
+    media_esempi = sum(v["esempi_concreti"] for v in valutazioni) / len(valutazioni)
 
-    # Media pesata: Chiarezza 40%, Struttura 30%, Esempi 30%
-    overall_attuale = round((media_chiarezza * 0.4 + media_star * 0.3 + media_esempi * 0.3) * 10, 1)
+    # Media pesata: Chiarezza 40%, Struttura 30%, Esempi 30% -> punteggio 0-100
+    overall_attuale = round(
+        (media_chiarezza * 0.4 + media_star * 0.3 + media_esempi * 0.3) * 10, 1
+    )
 
     # 2. Gestione dei punteggi precedenti (se esistono)
-        # 2. Gestione dei punteggi precedenti (se esistono)
     # Usiamo le chiavi corrette che il report genera in output
     if report_precedente and "stats_current" in report_precedente:
         stats_precedenti = report_precedente["stats_current"]
@@ -33,7 +35,32 @@ async def genera_report_finale(
     ansia = profilo_soft_skill.get("ansia_principale", "")
     timore = profilo_soft_skill.get("timore_critico", "")
 
-    # 3. Prompt per l'LLM
+    # 3. Paura superata: si guarda la metrica specifica della paura, non l'overall.
+    # Se era gia' superata per la stessa paura, resta superata anche se il voto scende.
+    metrica_paura = METRICA_PER_PAURA.get(ansia, "chiarezza")
+    media_paura = {
+        "chiarezza": media_chiarezza,
+        "struttura_star": media_star,
+        "esempi_concreti": media_esempi,
+    }[metrica_paura]
+
+    paura_superata_precedente = bool(
+        report_precedente
+        and report_precedente.get("paura_superata") is True
+        and report_precedente.get("paura_attuale") == ansia
+    )
+    paura_superata = (
+        paura_superata_precedente
+        or round(media_paura, 1) >= SOGLIA_METRICA_PAURA
+    )
+
+    # Le altre 3 paure della Domanda 2 (la lista ne ha 4)
+    prossime_paure = (
+        [p for p in PAURE_DISPONIBILI if p != ansia][:3]
+        if paura_superata else []
+    )
+
+    # 4. Prompt per l'LLM
     system_prompt = f"""
 <role>
 Sei un Career Coach esperto in ambito IT. Il tuo compito è analizzare i risultati di un colloquio simulato per uno studente ITS e generare un report di feedback professionale, costruttivo e orientato al miglioramento.
@@ -68,12 +95,12 @@ Rispondi solo con un JSON valido:
 """
 
     risultato_llm = await chiama_llm_json(
-        system_prompt=system_prompt, 
-        user_prompt="Genera il report testuale.", 
+        system_prompt=system_prompt,
+        user_prompt="Genera il report testuale.",
         temperature=0.4
     )
 
-    # 4. Restituiamo i dati per l'animazione frontend
+    # 5. Restituiamo i dati per l'animazione frontend
     return {
         "overall_previous": overall_precedente,
         "overall_current": overall_attuale,
@@ -83,6 +110,10 @@ Rispondi solo con un JSON valido:
             "struttura_star": round(media_star, 1),
             "esempi_concreti": round(media_esempi, 1)
         },
+        "paura_attuale": ansia,
+        "metrica_paura": metrica_paura,
+        "paura_superata": paura_superata,
+        "prossime_paure": prossime_paure,
         "badges": risultato_llm.get("badges", []),
         "improvements": risultato_llm.get("improvements", []),
         "final_tip": risultato_llm.get("final_tip", "")
