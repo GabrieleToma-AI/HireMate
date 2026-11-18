@@ -9,8 +9,8 @@ Questo documento elenca, file per file, cosa è cambiato rispetto a `origin/main
 
 ## Riepilogo
 
-- **26 file cambiati:** 10 nuovi, 16 modificati.
-- **Nuovi file:** `profilo.py`, `agenti/cv_parser.py`, `routers/cv.py`, `test_reporter.py`, `test_enorme.py`, `processi_spiegati/piano_lavoro_18_11.md`, `processi_spiegati/recap_18_11.md`, `processi_spiegati/recap_18_11_2.md`, questo changelog, `processi_spiegati/guida_test_e_cambiamenti.md`.
+- **27 file cambiati:** 11 nuovi, 16 modificati.
+- **Nuovi file:** `profilo.py`, `agenti/cv_parser.py`, `routers/cv.py`, `test_reporter.py`, `test_enorme.py`, `processi_spiegati/piano_lavoro_18_11.md`, `processi_spiegati/recap_18_11.md`, `processi_spiegati/recap_18_11_2.md`, questo changelog, `processi_spiegati/guida_test_e_cambiamenti.md`, `processi_spiegati/handoff.md`.
 - **File modificati:** `.env.example`, `README.md`, `agenti/evaluator.py`, `agenti/interviewer.py`, `agenti/llm.py`, `agenti/reporter.py`, `corsi.py`, `input_registrazione.txt`, `main.py`, `processi_spiegati/funzionamento.md`, `requirements.txt`, `routers/sessions.py`, `test_api_full.py`, `test_int_eval.py`, `test_interviewer.py`, `test_sistema.py`.
 - **Non tracciati da git:** `.env` (chiavi) e `venv/` (ambiente), già in `.gitignore`.
 
@@ -46,6 +46,7 @@ Questo documento elenca, file per file, cosa è cambiato rispetto a `origin/main
 | `test_sistema.py` | Modificato | Firma aggiornata, profilo ufficiale, exit code 1 se un test fallisce, UTF-8; niente `soft_skill`. |
 | `processi_spiegati/cambiamenti_ultimo_push.md` | **Nuovo** | Questo changelog. |
 | `processi_spiegati/guida_test_e_cambiamenti.md` | **Nuovo** | Guida per eseguire il test, capire le sezioni, spiegare le modifiche ai compagni e rispondere alle domande. |
+| `processi_spiegati/handoff.md` | **Nuovo** | Stato compatto per riprendere il progetto in una nuova chat: git, decisioni, comandi, TODO e regole. |
 
 ---
 

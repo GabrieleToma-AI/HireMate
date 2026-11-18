@@ -10,7 +10,7 @@ Questa guida serve a te, per lanciare `test_enorme.py`, capire cosa stai testand
 - Con `--live` aggiunge **3 chiamate vere** a Gemini Lite e arriva a **91 test**.
 - L'ultimo push su GitHub è `origin/main` = `3a15197`.
 - Le novità sono sul branch **`feature/genai-core`**, con i commit `b27e44c`, `0c0d192`, `26226f1` (e questo documento).
-- Rispetto all'ultimo push sono cambiati **26 file**: 10 nuovi e 16 modificati.
+- Rispetto all'ultimo push sono cambiati **27 file**: 11 nuovi e 16 modificati.
 
 ---
 
@@ -168,5 +168,5 @@ git push -u origin feature/genai-core
 - **Branch:** `feature/genai-core`.
 - **Commit:** `b27e44c` (backend), `0c0d192` (test/changelog), `26226f1` (live/docs), più il commit di questa guida.
 - **Push:** non ancora fatto; `main` non è stato toccato.
-- **File vs ultimo push:** 26 (10 nuovi, 16 modificati).
+- **File vs ultimo push:** 27 (11 nuovi, 16 modificati).
 - `.env` e `venv/` non sono tracciati.
