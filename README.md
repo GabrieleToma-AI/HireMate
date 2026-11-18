@@ -132,6 +132,8 @@ python test_int_eval.py
 python test_api_full.py      # richiede il server attivo su :8000
 ```
 
+Per capire cosa testa e cosa è cambiato: [guida_test_e_cambiamenti.md](processi_spiegati/guida_test_e_cambiamenti.md).
+
 ---
 
 ## 👥 Divisione del lavoro
