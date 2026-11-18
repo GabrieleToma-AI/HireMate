@@ -11,9 +11,10 @@ Copre tutte le novità del backend GenAI senza consumare quota:
 - configurazione, requirements, documenti
 
 Esecuzione:
-    python test_enorme.py
+    python test_enorme.py          # 88 test offline (mock LLM)
+    python test_enorme.py --live   # + 3 chiamate reali a Gemini Lite
 
-Nessuna chiamata reale a Gemini/FreeLLMAPI: tutti gli LLM sono mockati.
+Senza --live nessuna chiamata reale a Gemini/FreeLLMAPI: tutti gli LLM sono mockati.
 """
 
 import asyncio
@@ -59,6 +60,8 @@ from routers.sessions import (
 
 sys.stdout.reconfigure(encoding="utf-8")
 logging.disable(logging.CRITICAL)
+
+LIVE = "--live" in sys.argv
 
 BASE = Path(__file__).resolve().parent
 
@@ -1166,6 +1169,58 @@ async def main() -> int:
     await run.caso("piano_lavoro_18_11.md aggiornato", test_piano)
     await run.caso("input_registrazione.txt allineato", test_input_registrazione)
     await run.caso("Nessun riferimento a Gemini 3.8 nel codice", test_nessun_38_nel_codice)
+
+    # =====================================================================
+    if LIVE:
+        run.sezione("10. LIVE GEMINI (chiamate reali, consuma quota)")
+
+        async def live_interviewer():
+            domanda = await genera_domanda(
+                corso="SOC Analyst", profilo_soft_skill=PROFILO
+            )
+            assert isinstance(domanda, str)
+            assert len(domanda) > 20, domanda
+            # Non tutte le domande finiscono con "?": l'HR può usare l'imperativo.
+            spie = ("?", "descriva", "racconti", "come", "quale", "spieghi")
+            assert any(pista in domanda.lower() for pista in spie), domanda
+            print(f"     domanda reale: {domanda[:120]}...")
+
+        async def live_evaluator():
+            risultato = await valuta_risposta(
+                corso="SOC Analyst",
+                profilo_soft_skill=PROFILO,
+                domanda="Raccontami un progetto a cui hai lavorato.",
+                trascrizione="Non lo so, non ho mai fatto niente.",
+            )
+            for chiave in METRICHE:
+                assert isinstance(risultato[chiave], int), chiave
+                assert 1 <= risultato[chiave] <= 10, (chiave, risultato[chiave])
+            assert isinstance(risultato["suggerimento"], str)
+            assert isinstance(risultato["better_answer"], str)
+            media = sum(risultato[c] for c in METRICHE) / 3
+            print(
+                "     voti reali: "
+                f"{risultato['chiarezza']}/{risultato['struttura_star']}/{risultato['esempi_concreti']}"
+                f" (media {media:.1f})"
+            )
+            # Una risposta palesemente povera non deve essere premiata.
+            assert media <= 6, f"Risposta povera valutata troppo alta: {risultato}"
+
+        async def live_reporter():
+            report = await genera_report_finale(
+                corso="SOC Analyst",
+                profilo_soft_skill=profilo_con(PAURE[0]),
+                valutazioni=valutazioni(8, 8, 8),
+            )
+            assert report["paura_superata"] is True, report
+            assert report["metrica_paura"] == "chiarezza", report
+            assert len(report["prossime_paure"]) == 3, report
+            assert isinstance(report["final_tip"], str)
+            print(f"     report reale: {report['overall_current']}/100, metrica chiarezza")
+
+        await run.caso("LIVE: Interviewer genera una domanda vera", live_interviewer)
+        await run.caso("LIVE: Evaluator non premia una risposta povera", live_evaluator)
+        await run.caso("LIVE: Reporter calcola la paura e chiama l'LLM", live_reporter)
 
     # =====================================================================
     esito = run.riepilogo()

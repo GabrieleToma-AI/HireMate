@@ -38,7 +38,7 @@ Questo documento elenca, file per file, cosa è cambiato rispetto a `origin/main
 | `processi_spiegati/recap_18_11.md` | **Nuovo** | Recuperato il recap del progetto che era fuori da git; marcato come **documento storico** e corretta la parte modelli (niente 3.8). |
 | `processi_spiegati/recap_18_11_2.md` | **Nuovo** | Recap dei lavori di oggi: file toccati, regola per metrica, cronologia, CV, auth/DB, test e TODO. |
 | `test_reporter.py` | **Nuovo** | Test offline del Reporter: 7.4/7.5 per ogni metrica, mappa paura → metrica, sticky, reset, 3 opzioni esatte, default. |
-| `test_enorme.py` | **Nuovo** | Suite enorme offline (88 test) su profilo, corsi, LLM (retry/timeout/fallback), interviewer/cronologia, evaluator, reporter, modelli/API, CV, CORS, requirements e documenti. |
+| `test_enorme.py` | **Nuovo** | Suite enorme: 88 test offline (mock LLM) su profilo, corsi, retry/timeout/fallback, interviewer/cronologia, evaluator, reporter, modelli/API, CV, CORS e documenti; con `--live` aggiunge 3 test reali su Gemini Lite (91 totali). |
 | `test_api_full.py` | Modificato | Profilo ufficiale, stampa di `paura_superata`, `metrica_paura`, `prossime_paure`; verifica le due sessioni (prima bassa, seconda alta). |
 | `test_int_eval.py` | Modificato | Passa `profilo_soft_skill` (non più `paura_colloquio`/`reazione_problema`/`paura_fallimento`); exit code 1 in caso di errore; UTF-8. |
 | `test_interviewer.py` | Modificato | Passa `profilo_soft_skill` (non più `soft_skill`); exit code 1; UTF-8. |

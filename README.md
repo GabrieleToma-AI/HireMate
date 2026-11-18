@@ -123,6 +123,8 @@ python main.py           # http://127.0.0.1:8000/docs
 
 ### Test
 ```bash
+python test_enorme.py        # 88 test offline (mock LLM, nessuna quota)
+python test_enorme.py --live # + 3 chiamate reali a Gemini Lite
 python test_reporter.py      # offline, regola paura
 python test_sistema.py       # Gemini + evaluator
 python test_interviewer.py
