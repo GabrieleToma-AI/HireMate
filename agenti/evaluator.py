@@ -68,4 +68,8 @@ Rispondi solo con un JSON valido:
     for chiave in ("chiarezza", "struttura_star", "esempi_concreti"):
         risultato[chiave] = max(1, min(10, int(risultato.get(chiave, 1))))
 
+    # Il contratto /turn si aspetta sempre questi due campi.
+    risultato.setdefault("suggerimento", "")
+    risultato.setdefault("better_answer", "")
+
     return risultato

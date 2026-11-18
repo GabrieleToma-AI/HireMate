@@ -61,11 +61,16 @@ def _estrai_json(testo: str | None) -> dict:
 
 
 def _errore_temporaneo(errore: Exception) -> bool:
-    """True per 503/429/quota: vale la pena riprovare."""
+    """True per 503/429/quota/timeout: vale la pena riprovare."""
+    if isinstance(errore, asyncio.TimeoutError):
+        return True
     testo = str(errore).upper()
     return any(
         codice in testo
-        for codice in ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED", "RATE LIMIT")
+        for codice in (
+            "503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED",
+            "RATE LIMIT", "TIMEOUT", "TIMED OUT",
+        )
     )
 
 

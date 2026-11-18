@@ -28,8 +28,11 @@ Rispondi solo con un JSON valido:
 
 def estrai_testo_pdf(contenuto: bytes) -> str:
     """Estrae il testo da un PDF caricato in memoria."""
-    lettore = PdfReader(io.BytesIO(contenuto))
-    pagine = [(pagina.extract_text() or "") for pagina in lettore.pages]
+    try:
+        lettore = PdfReader(io.BytesIO(contenuto))
+        pagine = [(pagina.extract_text() or "") for pagina in lettore.pages]
+    except Exception as e:
+        raise ValueError("PDF non leggibile.") from e
     return "\n".join(pagine).strip()
 
 
