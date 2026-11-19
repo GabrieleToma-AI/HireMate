@@ -61,7 +61,7 @@ Rispondi solo con un JSON valido:
     risultato = await chiama_llm_json(
         system_prompt=system_prompt,
         user_prompt="Esegui la valutazione.",
-        temperature=0.3
+        temperature=0.2
     )
 
     # I voti devono essere interi tra 1 e 10: l'LLM a volte sfora.

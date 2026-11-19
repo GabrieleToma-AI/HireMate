@@ -50,7 +50,7 @@ def health_check():
     return {
         "engine": "GenAI",
         "database": "Supabase (da collegare)",
-        "llm": "FreeLLMAPI / Gemini 3.5 Flash-Lite",
+        "llm": "FreeLLMAPI / Gemini 3.5 Flash-Lite / DeepSeek",
         "status": "healthy"
     }
 

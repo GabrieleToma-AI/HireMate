@@ -16,7 +16,7 @@ Simulatore di colloqui HR per studenti ITS ICT Piemonte. Il backend gestisce la 
 | `main.py` | Crea FastAPI, CORS, include i router. |
 | `corsi.py` | 14 corsi ITS con materie e focus HR; `get_dettagli_corso()`. |
 | `profilo.py` | Le 3 liste della profilazione + `METRICA_PER_PAURA` + soglia 7.5. |
-| `agenti/llm.py` | Wrapper LLM: FreeLLMAPI → Gemini Lite, timeout, 2 retry, JSON robusto. |
+| `agenti/llm.py` | Wrapper LLM: FreeLLMAPI → Gemini Lite → DeepSeek, timeout differenziati, 2 retry su Gemini, JSON robusto. |
 | `agenti/interviewer.py` | Genera la domanda (prima o successiva, con `cronologia`). |
 | `agenti/evaluator.py` | Valuta la trascrizione: chiarezza, STAR, esempi, suggerimento, better answer. |
 | `agenti/reporter.py` | Report finale: overall, stats, paura superata, prossime paure, badges. |
@@ -119,7 +119,7 @@ copy .env.example .env   # inserisci le chiavi
 python main.py           # http://127.0.0.1:8000/docs
 ```
 
-`.env` (non committare): `FREELLMAPI_*`, `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-3.5-flash-lite`, `CORS_ALLOW_ORIGINS`, `LLM_TIMEOUT_SECONDS`.
+`.env` (non committare): `FREELLMAPI_*` + `FREELLMAPI_TIMEOUT_SECONDS=3`, `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-3.5-flash-lite`, `GEMINI_TIMEOUT_SECONDS=6`, `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL=deepseek-flash`, `DEEPSEEK_BASE_URL`, `DEEPSEEK_TIMEOUT_SECONDS=30`, `LLM_RETRY_DELAY_SECONDS`, `CORS_ALLOW_ORIGINS`.
 
 ### Test
 ```bash

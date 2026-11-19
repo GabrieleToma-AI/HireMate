@@ -11,8 +11,8 @@ Sei un parser di CV. Estrai dal testo solo le competenze e i progetti.
 
 <instructions>
 1. Non inventare nulla: se un'informazione non c'è, lascia la lista vuota.
-2. "competenze" sono linguaggi, strumenti, tecnologie e soft skill citati.
-3. "progetti" sono esperienze scolastiche, personali o lavorative descritte.
+2. "competenze" sono linguaggi di programmazione, strumenti informatici utilizzati, tecnologie e soft skill citati.
+3. "progetti" sono esperienze scolastiche, personali o lavorative descritte, compresi progetti realizzati.
 4. Rispondi in italiano.
 </instructions>
 

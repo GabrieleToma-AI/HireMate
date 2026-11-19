@@ -10,6 +10,13 @@ from google import genai
 logger = logging.getLogger(__name__)
 load_dotenv()
 
+# --- Configurazione timeout ---
+# I primi due provider devono rispondere in fretta: l'utente è in attesa.
+# DeepSeek è a pagamento e fa da ultima risorsa, quindi può prendersi più tempo.
+TIMEOUT_FREELLMAPI = float(os.getenv("FREELLMAPI_TIMEOUT_SECONDS", "3"))
+TIMEOUT_GEMINI = float(os.getenv("GEMINI_TIMEOUT_SECONDS", "6"))
+TIMEOUT_DEEPSEEK = float(os.getenv("DEEPSEEK_TIMEOUT_SECONDS", "30"))
+
 # --- Configurazione Client ---
 # FreeLLMAPI:
 freellmapi_client = None
@@ -17,7 +24,7 @@ if os.getenv("FREELLMAPI_BASE_URL"):
     freellmapi_client = AsyncOpenAI(
         base_url=os.getenv("FREELLMAPI_BASE_URL"),
         api_key=os.getenv("FREELLMAPI_API_KEY", "dummy-key"),
-        timeout=5.0,
+        timeout=TIMEOUT_FREELLMAPI,
         max_retries=0,  # Zero retry per non perdere ulteriore tempo
     )
 
@@ -28,9 +35,21 @@ if os.getenv("GEMINI_API_KEY"):
 else:
     logger.warning("GEMINI_API_KEY non trovata")
 
+# DeepSeek (API compatibile OpenAI): ultima risorsa, servizio a pagamento.
+deepseek_client = None
+if os.getenv("DEEPSEEK_API_KEY"):
+    deepseek_client = AsyncOpenAI(
+        base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
+        api_key=os.getenv("DEEPSEEK_API_KEY"),
+        timeout=TIMEOUT_DEEPSEEK,
+        max_retries=0,  # se anche DeepSeek fallisce, l'errore arriva all'utente
+    )
+else:
+    logger.warning("DEEPSEEK_API_KEY non trovata")
+
 MODELLO_FREELLMAPI = os.getenv("FREELLMAPI_MODEL", "auto:fastest")
 MODELLO_GEMINI = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
-TIMEOUT_LLM = float(os.getenv("LLM_TIMEOUT_SECONDS", "20"))
+MODELLO_DEEPSEEK = os.getenv("DEEPSEEK_MODEL", "deepseek-flash")
 TENTATIVI_GEMINI = 3  # 1 tentativo + 2 retry
 ATTESA_RETRY = float(os.getenv("LLM_RETRY_DELAY_SECONDS", "1.5"))
 
@@ -108,7 +127,7 @@ async def _chiama_gemini(system_prompt: str, user_prompt: str, temperature: floa
                         temperature=temperature
                     )
                 ),
-                timeout=TIMEOUT_LLM,
+                timeout=TIMEOUT_GEMINI,
             )
             return _estrai_json(risposta.text)
         except Exception as e:
@@ -123,17 +142,45 @@ async def _chiama_gemini(system_prompt: str, user_prompt: str, temperature: floa
     raise LLMError("Gemini: nessun tentativo eseguito")
 
 
-async def chiama_llm_json(system_prompt: str, user_prompt: str, temperature: float = 0.3) -> dict:
-    """Esegue il 1st try con FreeLLMAPI e il 2nd try con Gemini (gemini-3.5-flash-lite)."""
-    sequenza = [_chiama_freellmapi, _chiama_gemini]
+async def _chiama_deepseek(system_prompt: str, user_prompt: str, temperature: float) -> dict:
+    """Ultima risorsa: servizio a pagamento, quindi senza retry (l'errore deve arrivare in fretta)."""
+    if not deepseek_client:
+        raise LLMError("DeepSeek non configurato nel .env")
+    try:
+        risposta = await deepseek_client.chat.completions.create(
+            model=MODELLO_DEEPSEEK,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            response_format={"type": "json_object"},
+            temperature=temperature,
+        )
+        return _estrai_json(risposta.choices[0].message.content)
+    except Exception as e:
+        raise LLMError(f"DeepSeek: {str(e)}") from e
 
-    ultimo_errore = None
+
+async def chiama_llm_json(system_prompt: str, user_prompt: str, temperature: float = 0.3) -> dict:
+    """Prova nell'ordine: FreeLLMAPI, Gemini Lite, DeepSeek.
+
+    I primi due hanno timeout corti per non far attendere l'utente;
+    DeepSeek, essendo a pagamento, è l'ultima risorsa ed è quella più affidabile.
+    """
+    sequenza = [_chiama_freellmapi, _chiama_gemini, _chiama_deepseek]
+
+    errori: list[str] = []
+    ultimo_errore: Exception | None = None
     for provider in sequenza:
         try:
             logger.info("Tentativo con: %s", provider.__name__)
             return await provider(system_prompt, user_prompt, temperature)
         except LLMError as e:
             logger.warning("Fallback attivato: %s", e)
+            errori.append(str(e))
             ultimo_errore = e
 
-    raise LLMError(f"Tutti i provider hanno fallito. Errore: {ultimo_errore}") from ultimo_errore
+    # Si riportano tutti gli errori, non solo l'ultimo: altrimenti un guasto
+    # del primo provider resta invisibile nel messaggio finale.
+    dettaglio = " | ".join(errori)
+    raise LLMError(f"Tutti i provider hanno fallito. Errori: {dettaglio}") from ultimo_errore

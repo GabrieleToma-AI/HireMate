@@ -39,6 +39,7 @@ from agenti.evaluator import valuta_risposta
 from agenti.interviewer import genera_domanda
 from agenti.llm import (
     LLMError,
+    _chiama_deepseek,
     _chiama_freellmapi,
     _chiama_gemini,
     _errore_temporaneo,
@@ -389,7 +390,7 @@ async def main() -> int:
         with (
             patch("agenti.llm.gemini_client", client_fake),
             patch("agenti.llm.ATTESA_RETRY", 0),
-            patch("agenti.llm.TIMEOUT_LLM", 0.01),
+            patch("agenti.llm.TIMEOUT_GEMINI", 0.01),
         ):
             await assert_raises_async(LLMError, _chiama_gemini("sys", "user", 0.1))
         assert generate.await_count == 3
@@ -410,6 +411,17 @@ async def main() -> int:
             assert await _chiama_freellmapi("sys", "user", 0.1) == {"ok": True}
         crea.assert_awaited_once()
 
+        # DeepSeek è OpenAI-compatibile: stesso client finto, stesso contratto.
+        crea_deepseek = AsyncMock(return_value=SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content='{"ok": true}'))]
+        ))
+        client_deepseek = SimpleNamespace(
+            chat=SimpleNamespace(completions=SimpleNamespace(create=crea_deepseek))
+        )
+        with patch("agenti.llm.deepseek_client", client_deepseek):
+            assert await _chiama_deepseek("sys", "user", 0.1) == {"ok": True}
+        crea_deepseek.assert_awaited_once()
+
     async def test_freellmapi_none():
         with patch("agenti.llm.freellmapi_client", None):
             await assert_raises_async(LLMError, _chiama_freellmapi("s", "u", 0.1))
@@ -417,27 +429,73 @@ async def main() -> int:
     async def test_gemini_none():
         with patch("agenti.llm.gemini_client", None):
             await assert_raises_async(LLMError, _chiama_gemini("s", "u", 0.1))
+        with patch("agenti.llm.deepseek_client", None):
+            await assert_raises_async(LLMError, _chiama_deepseek("s", "u", 0.1))
 
     async def test_fallback():
+        ordine = []
+
+        async def freellmapi_giu(*args, **kwargs):
+            ordine.append("freellmapi")
+            raise LLMError("FreeLLMAPI giù")
+
+        async def gemini_giu(*args, **kwargs):
+            ordine.append("gemini")
+            raise LLMError("Gemini giù")
+
+        async def deepseek_ok(*args, **kwargs):
+            ordine.append("deepseek")
+            return {"ok": 1}
+
         with (
-            patch("agenti.llm._chiama_freellmapi", new=AsyncMock(side_effect=LLMError("down"))),
-            patch("agenti.llm._chiama_gemini", new=AsyncMock(return_value={"ok": 1})),
+            patch("agenti.llm._chiama_freellmapi", new=freellmapi_giu),
+            patch("agenti.llm._chiama_gemini", new=gemini_giu),
+            patch("agenti.llm._chiama_deepseek", new=deepseek_ok),
         ):
             assert await chiama_llm_json("s", "u") == {"ok": 1}
+        assert ordine == ["freellmapi", "gemini", "deepseek"]
+
+        # Se Gemini risponde, DeepSeek non deve essere toccato (è la risorsa a pagamento).
+        ordine.clear()
+
+        async def gemini_ok(*args, **kwargs):
+            ordine.append("gemini")
+            return {"ok": 2}
+
+        async def deepseek_mai(*args, **kwargs):
+            raise AssertionError("DeepSeek non deve essere chiamato")
+
+        with (
+            patch("agenti.llm._chiama_freellmapi", new=freellmapi_giu),
+            patch("agenti.llm._chiama_gemini", new=gemini_ok),
+            patch("agenti.llm._chiama_deepseek", new=deepseek_mai),
+        ):
+            assert await chiama_llm_json("s", "u") == {"ok": 2}
+        assert ordine == ["freellmapi", "gemini"]
 
     async def test_fallback_tutti():
         with (
-            patch("agenti.llm._chiama_freellmapi", new=AsyncMock(side_effect=LLMError("a"))),
-            patch("agenti.llm._chiama_gemini", new=AsyncMock(side_effect=LLMError("b"))),
+            patch("agenti.llm._chiama_freellmapi", new=AsyncMock(side_effect=LLMError("free giù"))),
+            patch("agenti.llm._chiama_gemini", new=AsyncMock(side_effect=LLMError("gemini giù"))),
+            patch("agenti.llm._chiama_deepseek", new=AsyncMock(side_effect=LLMError("deepseek giù"))),
         ):
             errore = await assert_raises_async(
                 LLMError, chiama_llm_json("s", "u"), "Tutti i provider"
             )
-            assert "a" in str(errore) and "b" in str(errore)
+            # Tutti e tre gli errori devono comparire: prima si vedeva solo l'ultimo.
+            testo = str(errore)
+            assert "free giù" in testo, testo
+            assert "gemini giù" in testo, testo
+            assert "deepseek giù" in testo, testo
 
     def test_modello():
         assert "gemini-3.5-flash-lite" in llm_module.MODELLO_GEMINI
         assert llm_module.TENTATIVI_GEMINI == 3
+        assert llm_module.MODELLO_DEEPSEEK == "deepseek-flash"
+        # I primi due provider devono restare rapidi: l'utente è in attesa.
+        assert llm_module.TIMEOUT_FREELLMAPI <= 5
+        assert llm_module.TIMEOUT_GEMINI <= 10
+        assert llm_module.TIMEOUT_DEEPSEEK >= llm_module.TIMEOUT_GEMINI
 
     await run.caso("_estrai_json gestisce JSON, code fence e testo extra", test_estrai_json)
     await run.caso("_estrai_json rifiuta risposte vuote", test_estrai_json_vuoto)
@@ -447,10 +505,10 @@ async def main() -> int:
     await run.caso("Gemini: 3 errori -> LLMError", test_gemini_tutti_falliscono)
     await run.caso("Gemini: timeout -> retry e LLMError", test_gemini_timeout)
     await run.caso("Gemini: risposta con code fence", test_gemini_code_fence)
-    await run.caso("FreeLLMAPI: risposta JSON", test_freellmapi)
+    await run.caso("FreeLLMAPI/DeepSeek: risposta JSON", test_freellmapi)
     await run.caso("FreeLLMAPI non configurato -> LLMError", test_freellmapi_none)
-    await run.caso("Gemini non configurato -> LLMError", test_gemini_none)
-    await run.caso("chiama_llm_json: fallback FreeLLMAPI -> Gemini", test_fallback)
+    await run.caso("Gemini/DeepSeek non configurati -> LLMError", test_gemini_none)
+    await run.caso("chiama_llm_json: ordine FreeLLMAPI -> Gemini -> DeepSeek", test_fallback)
     await run.caso("chiama_llm_json: tutti i provider falliscono", test_fallback_tutti)
     await run.caso("Modello unico gemini-3.5-flash-lite", test_modello)
 
@@ -535,7 +593,7 @@ async def main() -> int:
         assert risultato["esempi_concreti"] == 7
         assert risultato["suggerimento"] == "s"
         assert risultato["better_answer"] == "b"
-        assert mock.await_args.kwargs["temperature"] == 0.3
+        assert mock.await_args.kwargs["temperature"] == 0.2
 
     async def test_evaluator_default():
         with patch("agenti.evaluator.chiama_llm_json", new=AsyncMock(return_value={})):
