@@ -1,8 +1,8 @@
-# ✅ TODO — cosa manca (aggiornato 19/11/2026)
+# ✅ TODO — cosa manca (aggiornato 20/11/2026)
 
 Questo è **l'unico documento dei task** di HireMate: sostituisce `split_lavoro.md`, `handoff.md` e i TO DO sparsi nei vecchi recap.
 
-- **Stato di partenza:** `main` = `e62ac4c` (PR #1 mergiata); i documenti sono consolidati nei 4 file attuali.
+- **Stato di partenza:** `main` è allineata a `origin/main` (ultima PR mergiata: #3, contratto `sessionId`); i documenti sono consolidati nei 4 file attuali.
 - **Regola:** si spunta una casella solo quando il criterio di accettazione è soddisfatto e i test sono verdi.
 - **Legenda proprietari:** `[C1]` Collega 1 (Stream 1), `[C2]` Collega 2 (Stream 2), `[S3]` Stream 3 (GenAI core), `[AR/VR]` team frontend.
 
@@ -47,7 +47,7 @@ Vista d'insieme, in ordine di milestone. Il dettaglio per persona è nelle sezio
 - [x] Aggiornare `TurnRequest` e `EndSessionRequest` con `sessionId`, mantenendo i campi legacy per la transizione.
 - [x] Congelare le forme JSON finali (sezione 2) e aggiornare `README.md` / `FUNZIONAMENTO.md`.
 - [ ] Comunicare a Collega 1 e Collega 2 di branchare da `main` e di usare i modelli senza duplicarli.
-- [ ] Aprire la PR del contratto.
+- [x] Aprire la PR del contratto.
 
 ### Blocco 1 — Fondamenta (in parallelo) `[C1]` `[C2]` `[S3]`
 
@@ -309,8 +309,8 @@ Il server legge dal DB valutazioni, profilo e report precedente. In transizione 
 ### P0 — Da fare subito
 
 1. **Allineamento e PR**
-   - `main` è già allineato e la PR #1 è mergiata (`e62ac4c`).
-   - Apri la PR del contratto `sessionId` e comunica a Collega 1 e 2 di branchare da `main`.
+   - `main` è allineata a `origin/main`; le PR #1, #2 e #3 sono mergiate.
+   - Comunicazione a Collega 1 e 2: partono da `main` e importano i modelli da `routers/sessions.py`.
 2. **`sessionId` e contratto**
    - `sessionId` è in `/start`; `TurnRequest`/`EndSessionRequest` lo accettano come opzionale; i campi legacy restano per la transizione.
    - Definisci le forme JSON finali (sezione 2) e aggiorna `README.md`/`FUNZIONAMENTO.md`.
@@ -383,7 +383,7 @@ Serve al backend sapere **cosa** il frontend si aspetta; questi punti vanno conc
 
 ### Regole di lavoro
 
-1. **Base di partenza**: `main` è allineato a `origin/main` (`e62ac4c`). Ogni stream crea il proprio branch **da `main`**.
+1. **Base di partenza**: `main` è allineata a `origin/main`. Ogni stream crea il proprio branch **da `main`**.
 2. **Un branch per stream**: `feature/db-auth`, `feature/turn-audio`, `feature/contratto-sessionid` (o nome equivalente).
 3. **Niente commit su `main`**; PR verso `main` con review.
 4. **Niente `.env` o chiavi** nei commit, nei log o nelle chat. La chiave Gemini free è autorizzata **solo per i test**; se un giorno la cartella viene condivisa o sincronizzata fuori dal PC, le chiavi vanno ruotate.
@@ -425,7 +425,7 @@ Serve al backend sapere **cosa** il frontend si aspetta; questi punti vanno conc
 
 ## 10. Rischi e decisioni aperte
 
-- **Base allineata:** `main` è a `e62ac4c`; ogni stream brancha da lì per non divergere.
+- **Base allineata:** `main` è allineata a `origin/main`; ogni stream brancha da lì per non divergere.
 - **DeepSeek:** è a pagamento e resta l'ultima risorsa; monitorare chiave e costi, non usarlo nei test di massa.
 - **Contratto `sessionId`:** va congelato prima di DB e `/turn`, altrimenti si sovrascrivono.
 - **Auth:** PIN a 4 cifre → bcrypt + rate limit obbligatori; token JWT breve.

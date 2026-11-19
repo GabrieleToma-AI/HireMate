@@ -44,9 +44,9 @@ Ordine consigliato in una nuova chat: **README → FUNZIONAMENTO → RECAP → T
 | `.env.example` | Modello delle variabili d'ambiente (da copiare in `.env`). |
 | `.gitignore` | Esclude `venv/`, `.env`, `__pycache__/`. |
 
-### Stato attuale (19/11/2026)
+### Stato attuale (20/11/2026)
 
-- `main` = `e62ac4c` (PR #1 già mergiata): il backend GenAI è **pushato**.
+- `main` è allineata a `origin/main`; ultimo merge: PR #3 (contratto `sessionId`). Il backend GenAI è **mergiato e pushato**.
 - Funzionanti e testati: `/api/cv/parse`, `/api/session/start`, `/api/session/end`.
 - Non ancora implementati: `POST /api/session/turn`, Supabase, auth, TTS/visemi, montaggio `static/`.
 - Test: **88/88 offline**; **91/91 con `--live`** (3 chiamate reali).

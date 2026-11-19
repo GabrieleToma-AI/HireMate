@@ -395,7 +395,7 @@ Poi la suite offline: 88/88, che deve restare tale anche con la chiave nel `.env
 
 La fase di studio resta in sola lettura finché l'utente non chiede un'azione: commit e push sono ammessi **su richiesta esplicita**, mai di iniziativa, e restano confinati al branch di lavoro. `main` non si tocca e `.env` non entra in git.
 
-Esempio (19/11): l'utente ha chiesto di committare e pushare le modifiche fino ad allora. Fatto su `feature/genai-core`, poi PR #1 mergiata in `main` con `e62ac4c`.
+Esempio (19/11): l'utente ha chiesto di committare e pushare le modifiche fino ad allora. Fatto su `feature/genai-core`, poi PR #1 mergiata in `main`.
 
 ---
 
@@ -452,7 +452,7 @@ I comandi per eseguirli sono nel [README](README.md#-test).
 >
 > Il test enorme verifica 88 casi offline in pochi secondi, senza consumare quota. Con `--live` fa anche 3 chiamate vere a Gemini Lite: una domanda, una valutazione severa (4/1/1 su una risposta povera) e un report (80/100). I test offline servono per la logica e i casi limite; quelli live per dimostrare che l'LLM è davvero collegato.
 >
-> Il backend è mergiato in `main` (`e62ac4c`). Mancano `/turn`, database, auth e voce dell'avatar: sono nel TODO diviso tra noi tre.»
+> Il backend è mergiato in `main`. Mancano `/turn`, database, auth e voce dell'avatar: sono nel TODO diviso tra noi tre.»
 
 ---
 
