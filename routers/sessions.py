@@ -73,6 +73,7 @@ class SessionStartRequest(BaseModel):
         return valore
 
 class SessionStartResponse(BaseModel):
+    sessionId: str
     turnId: str
     questionText: str
     audioUrl: str | None = None
@@ -80,6 +81,8 @@ class SessionStartResponse(BaseModel):
     gesture: str = "explain"
 
 class EndSessionRequest(BaseModel):
+    # Opzionale in transizione: quando il DB sara' pronto, /end leggera' tutto da sessionId.
+    sessionId: str | None = None
     corso: str
     profilo_soft_skill: ProfiloSoftSkill
     valutazioni: list[Valutazione] = Field(min_length=1)
@@ -101,6 +104,8 @@ class Turno(BaseModel):
     trascrizione: str
 
 class TurnRequest(BaseModel):
+    # Opzionale in transizione: senza DB la cronologia viaggia ancora nel payload.
+    sessionId: str | None = None
     corso: str
     profilo_soft_skill: ProfiloSoftSkill
     cv_json: dict | None = None
@@ -141,6 +146,7 @@ async def start_session(request: SessionStartRequest):
         )
 
         return SessionStartResponse(
+            sessionId=uuid4().hex,
             turnId=f"turn-{uuid4().hex}",
             questionText=domanda,
             audioUrl=None,

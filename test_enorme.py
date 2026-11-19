@@ -794,14 +794,17 @@ async def main() -> int:
             trascrizione="R2",
         )
         assert richiesta.cronologia == []
+        assert richiesta.sessionId is None
 
         richiesta = TurnRequest(
+            sessionId="sess-1",
             corso="SOC Analyst",
             profilo_soft_skill=PROFILO,
             domanda="D2",
             trascrizione="R2",
             cronologia=[{"domanda": "D1", "trascrizione": "R1"}],
         )
+        assert richiesta.sessionId == "sess-1"
         assert richiesta.cronologia[0].domanda == "D1"
         assert richiesta.cronologia[0].trascrizione == "R1"
 
@@ -849,6 +852,8 @@ async def main() -> int:
         assert seconda.status_code == 200
         dati = prima.json()
         assert dati["questionText"] == "Domanda API"
+        assert isinstance(dati["sessionId"], str) and dati["sessionId"]
+        assert dati["sessionId"] != seconda.json()["sessionId"]
         assert dati["turnId"].startswith("turn-")
         assert dati["turnId"] != seconda.json()["turnId"]
         assert dati["audioUrl"] is None
@@ -928,7 +933,16 @@ async def main() -> int:
                 "valutazioni": [{"chiarezza": 8, "struttura_star": 8, "esempi_concreti": 8}],
                 "report_precedente": None,
             })
+            # Retrocompatibile: il campo nuovo e' accettato ma opzionale.
+            con_sessione = client.post("/api/session/end", json={
+                "sessionId": "sess-1",
+                "corso": "SOC Analyst",
+                "profilo_soft_skill": PROFILO,
+                "valutazioni": [{"chiarezza": 8, "struttura_star": 8, "esempi_concreti": 8}],
+                "report_precedente": None,
+            })
         assert risposta.status_code == 200
+        assert con_sessione.status_code == 200
         assert risposta.json()["report"]["paura_superata"] is True
         kwargs = mock.await_args.kwargs
         assert kwargs["valutazioni"][0]["chiarezza"] == 8
@@ -1026,11 +1040,11 @@ async def main() -> int:
     await run.caso("Valutazione valida e fuori range", test_modello_valutazione)
     await run.caso("ValutazioneCompleta con suggerimento/better", test_modello_valutazione_completa)
     await run.caso("Turno valido", test_modello_turno)
-    await run.caso("TurnRequest: cronologia default e popolata", test_turn_request)
+    await run.caso("TurnRequest: sessionId opzionale e cronologia", test_turn_request)
     await run.caso("TurnRequest: corso invalido", test_turn_request_corso_invalido)
     await run.caso("TurnResponse: campi e default", test_turn_response)
     await run.caso("DOMANDE_PER_COLLOQUIO = 6", test_domande_per_colloquio)
-    await run.caso("API /start risponde e turnId è univoco", test_api_start)
+    await run.caso("API /start: sessionId e turnId univoci", test_api_start)
     await run.caso("API /start rifiuta profilo invalido/incompleto", test_api_start_profilo_invalido)
     await run.caso("API /start rifiuta corso invalido", test_api_start_corso_invalido)
     await run.caso("API /start: LLMError -> 503 generico", test_api_start_llm_error)

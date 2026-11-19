@@ -43,9 +43,9 @@ Vista d'insieme, in ordine di milestone. Il dettaglio per persona è nelle sezio
 
 ### Blocco 0 — Contratto condiviso `[S3]`
 
-- [ ] Aggiungere `sessionId` (uuid4) alla risposta di `/start`.
-- [ ] Aggiornare `TurnRequest` e `EndSessionRequest` con `sessionId`, mantenendo i campi legacy per la transizione.
-- [ ] Congelare le forme JSON finali (sezione 2) e aggiornare `README.md` / `FUNZIONAMENTO.md`.
+- [x] Aggiungere `sessionId` (uuid4) alla risposta di `/start`.
+- [x] Aggiornare `TurnRequest` e `EndSessionRequest` con `sessionId`, mantenendo i campi legacy per la transizione.
+- [x] Congelare le forme JSON finali (sezione 2) e aggiornare `README.md` / `FUNZIONAMENTO.md`.
 - [ ] Comunicare a Collega 1 e Collega 2 di branchare da `main` e di usare i modelli senza duplicarli.
 - [ ] Aprire la PR del contratto.
 
@@ -95,12 +95,12 @@ Da chiudere **prima** di implementare DB, `/turn` e TTS.
 
 ### 2.1 `sessionId`
 
-Oggi `/start` restituisce solo `turnId`; manca l'identificativo della sessione. Va aggiunto:
+`/start` restituisce `sessionId` (uuid4) accanto a `turnId`; `TurnRequest` ed `EndSessionRequest` lo accettano come campo **opzionale** durante la transizione (senza DB la cronologia viaggia ancora nel payload).
 
-- `/start` genera `sessionId = uuid4()` e lo restituisce;
-- `/turn` riceve `sessionId` e salva il turno;
-- `/end` riceve `sessionId` e legge tutto dal DB;
-- il DB collega `users` → `sessions` → `turns`.
+- [x] `/start` genera `sessionId` e lo restituisce;
+- [ ] `/turn` riceve `sessionId` e salva il turno (Collega 2);
+- [ ] `/end` riceve `sessionId` e legge tutto dal DB (Collega 1);
+- [ ] il DB collega `users` → `sessions` → `turns`.
 
 **Proprietario:** Stream 3 modifica `routers/sessions.py`. Collega 1 e 2 lo usano, non lo modificano.
 
@@ -312,7 +312,7 @@ Il server legge dal DB valutazioni, profilo e report precedente. In transizione 
    - `main` è già allineato e la PR #1 è mergiata (`e62ac4c`).
    - Apri la PR del contratto `sessionId` e comunica a Collega 1 e 2 di branchare da `main`.
 2. **`sessionId` e contratto**
-   - Aggiungi `sessionId` a `/start`; aggiorna `TurnRequest`/`EndSessionRequest`; mantieni i campi legacy per una transizione.
+   - `sessionId` è in `/start`; `TurnRequest`/`EndSessionRequest` lo accettano come opzionale; i campi legacy restano per la transizione.
    - Definisci le forme JSON finali (sezione 2) e aggiorna `README.md`/`FUNZIONAMENTO.md`.
 3. **`main.py`**
    - Includi `routers/turn.py` e monta `static/`.

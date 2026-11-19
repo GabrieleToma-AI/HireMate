@@ -48,7 +48,7 @@ Ordine consigliato in una nuova chat: **README → FUNZIONAMENTO → RECAP → T
 
 - `main` = `e62ac4c` (PR #1 già mergiata): il backend GenAI è **pushato**.
 - Funzionanti e testati: `/api/cv/parse`, `/api/session/start`, `/api/session/end`.
-- Non ancora implementati: `POST /api/session/turn`, Supabase, auth, TTS/visemi, `sessionId`, montaggio `static/`.
+- Non ancora implementati: `POST /api/session/turn`, Supabase, auth, TTS/visemi, montaggio `static/`.
 - Test: **88/88 offline**; **91/91 con `--live`** (3 chiamate reali).
 
 ---
@@ -137,12 +137,14 @@ Errori: `415` tipo non PDF, `400` file vuoto/PDF illeggibile/senza testo, `413` 
 Risposta:
 
 ```json
-{"turnId": "turn-...", "questionText": "...", "audioUrl": null, "visemes": [], "gesture": "explain"}
+{"sessionId": "...", "turnId": "turn-...", "questionText": "...", "audioUrl": null, "visemes": [], "gesture": "explain"}
 ```
 
 ### `POST /api/session/turn` — **da implementare**
 
-Contratto già pronto in `routers/sessions.py`: `TurnRequest` (`corso`, `profilo_soft_skill`, `cv_json`, `domanda`, `trascrizione`, `cronologia`) → `TurnResponse` (`turnId`, `valutazione`, `prossimaDomanda`, `colloquio_terminato`, `audioUrl`, `visemes`, `gesture`).
+Contratto già pronto in `routers/sessions.py`: `TurnRequest` (`sessionId` opzionale, `corso`, `profilo_soft_skill`, `cv_json`, `domanda`, `trascrizione`, `cronologia`) → `TurnResponse` (`turnId`, `valutazione`, `prossimaDomanda`, `colloquio_terminato`, `audioUrl`, `visemes`, `gesture`).
+
+Quando il DB sarà pronto, `sessionId` diventerà obbligatorio e sostituirà `cronologia` come fonte dello storico.
 
 Dopo `DOMANDE_PER_COLLOQUIO = 6` domande, `colloquio_terminato` diventa `true` e `prossimaDomanda` è `null`. Dettagli e obiettivi in [TODO.md](TODO.md).
 
@@ -150,12 +152,15 @@ Dopo `DOMANDE_PER_COLLOQUIO = 6` domande, `colloquio_terminato` diventa `true` e
 
 ```json
 {
+  "sessionId": null,
   "corso": "Cyber Security Specialist",
   "profilo_soft_skill": {"ansia_principale": "...", "stile_gestione_problemi": "...", "timore_critico": "..."},
   "valutazioni": [{"chiarezza": 8, "struttura_star": 7, "esempi_concreti": 9}],
   "report_precedente": null
 }
 ```
+
+`sessionId` è accettato ma opzionale in transizione: quando il DB sarà pronto, `/end` leggerà tutto da lì.
 
 Risposta: `overall_previous`, `overall_current`, `stats_previous`, `stats_current`, `paura_attuale`, `metrica_paura`, `paura_superata`, `prossime_paure`, `badges`, `improvements`, `final_tip`.
 

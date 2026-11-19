@@ -265,7 +265,7 @@ Errori: `415` tipo errato, `400` file vuoto o PDF illeggibile/senza testo, `413`
 
 1. **Profilazione (frontend).** Lo studente risponde alle 3 domande; il frontend manda i valori esatti di `profilo.py`.
 2. **CV (opzionale).** `POST /api/cv/parse` → `cv_json` con competenze e progetti.
-3. **`POST /api/session/start`.** Pydantic valida corso e profilo; l'Interviewer chiama l'LLM e restituisce `turnId` + `questionText`. Nessuna persistenza: il server non ricorda la sessione.
+3. **`POST /api/session/start`.** Pydantic valida corso e profilo; l'Interviewer chiama l'LLM e restituisce `sessionId`, `turnId` e `questionText`. Nessuna persistenza: il server non ricorda la sessione.
 4. **Turni (mancante).** Oggi non esiste un endpoint che valuti un singolo turno: le valutazioni le fornisce il client direttamente a `/end`. L'endpoint `/turn` esiste solo come contratto.
 5. **`POST /api/session/end`.** Il Reporter calcola medie e overall, applica la regola della paura, chiama l'LLM per badges/improvements/final_tip e restituisce il report. Le `valutazioni` arrivano dal client: è temporaneo.
 
