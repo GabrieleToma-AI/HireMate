@@ -2,13 +2,13 @@
 
 Registro di **cosa è stato fatto** e **perché il codice è così**. Sostituisce i vecchi `recap_18_11*.md`, `cambiamenti_ultimo_push.md`, `handoff.md` e le decisioni sparse nel `piano_lavoro_18_11.md`.
 
-> Stato aggiornato al **19/11/2026**. Cosa manca: [TODO.md](TODO.md). Come funziona il codice: [FUNZIONAMENTO.md](FUNZIONAMENTO.md).
+> Stato aggiornato al **20/11/2026**. Cosa manca: [TODO.md](TODO.md). Come funziona il codice: [FUNZIONAMENTO.md](FUNZIONAMENTO.md).
 
 ---
 
 ## 1. Stato in una frase
 
-Il backend GenAI di HireMate è **mergiato su `main`** (`e62ac4c`), con profilo validato, paura misurata sulla metrica specifica (7.5/10), cronologia nell'Interviewer, Evaluator severo, endpoint CV, catena LLM a tre provider e **88 test offline verdi**. Mancano: endpoint `/turn`, Supabase, auth, TTS/visemi e frontend.
+Il backend GenAI di HireMate è **mergiato su `main`**, con profilo validato, paura misurata sulla metrica specifica (7.5/10), cronologia nell'Interviewer, Evaluator severo, endpoint CV, catena LLM a tre provider e **88 test offline verdi**. Mancano: endpoint `/turn`, Supabase, auth, TTS/visemi e frontend.
 
 ---
 
@@ -55,6 +55,8 @@ README.md, FUNZIONAMENTO.md, RECAP.md, TODO.md
 | 19/11, 11:44 | Split del lavoro rimasto tra i 3 AI engineer. | `6523869` |
 | 19/11, 12:03 | Merge della PR #1: il backend è su `main`. | `e62ac4c` |
 | 19/11, sera | Consolidamento documenti: da 9 `.md` sparsi a 4 file (README + FUNZIONAMENTO + RECAP + TODO). | — |
+| 19/11, 20:13 | Merge della PR #2: i 4 documenti sono su `main`. | `468fe3b` |
+| 20/11, 00:27 | Contratto `sessionId` (obbligatorio in `/start`, opzionale in `/turn` e `/end`) e merge della PR #3. | `2cc7462` |
 
 ---
 
