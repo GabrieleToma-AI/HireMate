@@ -19,7 +19,7 @@ Backend GenAI di HireMate pronto e testato sul branch **`feature/genai-core`**: 
 
 | Tema | Decisione |
 |---|---|
-| Modello LLM | Solo `gemini-3.5-flash-lite`; niente 3.8. FreeLLMAPI è il primo tentativo, Gemini il fallback. |
+| Modello LLM | Catena `FreeLLMAPI` → `gemini-3.5-flash-lite` → `deepseek-flash` (DeepSeek V4.1 Flash, a pagamento, ultima risorsa). Niente 3.8. Timeout corti sui primi due, più lungo su DeepSeek. |
 | Retry | 2 retry con backoff su 503/429/timeout. |
 | Paura superata | Metrica **specifica** ≥ 7.5/10, non l'overall. Sticky per la stessa paura; reset se la paura cambia. |
 | Mappa paura → metrica | "Restare senza parole" → `chiarezza`; "Non sembrare abbastanza preparato tecnicamente" → `esempi_concreti`; "Fare una figuraccia con il recruiter" → `struttura_star`; "Non saper parlare di me stesso" → `chiarezza`. |
@@ -34,11 +34,12 @@ Backend GenAI di HireMate pronto e testato sul branch **`feature/genai-core`**: 
 ## File da leggere, in ordine
 
 1. `processi_spiegati/handoff.md` (questo file).
-2. `processi_spiegati/cambiamenti_ultimo_push.md` — cosa è cambiato file per file rispetto a `3a15197`.
-3. `processi_spiegati/guida_test_e_cambiamenti.md` — come eseguire il test e spiegarlo.
-4. `processi_spiegati/recap_18_11_2.md` — recap dei lavori e TODO.
-5. `README.md` — architettura e contratti API.
-6. `processi_spiegati/piano_lavoro_18_11.md`, sezione 11 — decisioni finali.
+2. `processi_spiegati/regole_di_lettura_del_codice.md` — **metodo di lavoro**: stile delle risposte, come interpretare domande e modifiche, fase di sola lettura.
+3. `processi_spiegati/cambiamenti_ultimo_push.md` — cosa è cambiato file per file rispetto a `3a15197`.
+4. `processi_spiegati/guida_test_e_cambiamenti.md` — come eseguire il test e spiegarlo.
+5. `processi_spiegati/recap_18_11_2.md` — recap dei lavori e TODO.
+6. `README.md` — architettura e contratti API.
+7. `processi_spiegati/piano_lavoro_18_11.md`, sezione 11 — decisioni finali.
 
 ## Comandi
 
