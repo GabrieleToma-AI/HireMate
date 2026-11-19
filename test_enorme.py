@@ -1190,21 +1190,31 @@ async def main() -> int:
         testo = (BASE / "README.md").read_text(encoding="utf-8")
         for atteso in ("metrica_paura", "TurnRequest", "/api/cv/parse", "bcrypt", "7.5"):
             assert atteso in testo, atteso
+        assert "processi_spiegati" not in testo, "il README non deve puntare ai vecchi documenti"
 
     def test_funzionamento():
-        testo = (BASE / "processi_spiegati" / "funzionamento.md").read_text(encoding="utf-8")
+        testo = (BASE / "FUNZIONAMENTO.md").read_text(encoding="utf-8")
         for atteso in ("METRICA_PER_PAURA", "cronologia", "cv_parser"):
             assert atteso in testo, atteso
 
     def test_recap():
-        testo = (BASE / "processi_spiegati" / "recap_18_11_2.md").read_text(encoding="utf-8")
+        testo = (BASE / "RECAP.md").read_text(encoding="utf-8")
         for atteso in ("7.5", "TurnRequest", "pypdf"):
             assert atteso in testo, atteso
 
-    def test_piano():
-        testo = (BASE / "processi_spiegati" / "piano_lavoro_18_11.md").read_text(encoding="utf-8")
-        for atteso in ("feature/genai-core", "7.5"):
+    def test_todo():
+        testo = (BASE / "TODO.md").read_text(encoding="utf-8")
+        for atteso in ("sessionId", "/turn", "Collega 2"):
             assert atteso in testo, atteso
+        # I documenti sono consolidati: 4 file in root, niente cartella sparsa.
+        assert not (BASE / "processi_spiegati").exists(), "la vecchia cartella deve essere rimossa"
+        documenti = sorted(p.name for p in BASE.glob("*.md"))
+        assert documenti == [
+            "FUNZIONAMENTO.md",
+            "README.md",
+            "RECAP.md",
+            "TODO.md",
+        ], documenti
 
     def test_input_registrazione():
         testo = (BASE / "input_registrazione.txt").read_text(encoding="utf-8")
@@ -1222,9 +1232,9 @@ async def main() -> int:
     await run.caso(".env.example: solo Lite, retry e CORS", test_env_example)
     await run.caso(".gitignore protegge .env e venv", test_gitignore)
     await run.caso("README aggiornato", test_readme)
-    await run.caso("funzionamento.md aggiornato", test_funzionamento)
-    await run.caso("recap_18_11_2.md aggiornato", test_recap)
-    await run.caso("piano_lavoro_18_11.md aggiornato", test_piano)
+    await run.caso("FUNZIONAMENTO.md aggiornato", test_funzionamento)
+    await run.caso("RECAP.md aggiornato", test_recap)
+    await run.caso("TODO.md aggiornato e documenti consolidati", test_todo)
     await run.caso("input_registrazione.txt allineato", test_input_registrazione)
     await run.caso("Nessun riferimento a Gemini 3.8 nel codice", test_nessun_38_nel_codice)
 
