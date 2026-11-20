@@ -59,7 +59,9 @@ README.md, FUNZIONAMENTO.md, RECAP.md, TODO.md
 | 20/11, 00:27 | Contratto `sessionId` (obbligatorio in `/start`, opzionale in `/turn` e `/end`) e merge della PR #3. | `2cc7462` |
 | 20/11, 00:33 | Merge della PR #4: lo stato dei documenti non dipende più dagli hash. | `73e8188` |
 | 20/11 | Merge della PR #5: `AGENTS.md` come quinto documento; `test_enorme.py` accetta il nuovo `.md` e ne limita la dimensione. | `352e7d4` |
-| 20/11 | Allineamento documenti: cinque file, Blocco 0.5 (guardrail) nel TODO, diagnosi dei prompt in §6.9. | — |
+| 20/11 | Merge della PR #6: allineamento documenti (cinque file, Blocco 0.5 nel TODO, diagnosi dei prompt in §6.9). | `073ead6` |
+| 20/11 | Merge della PR #7: CI su GitHub Actions, suite offline su Windows e Python 3.14 a ogni PR e push su `main`. | `df1cb42` |
+| 20/11 | Protezione di `main`: PR obbligatoria e check `suite offline` richiesto; prova del rosso (84/88 con la soglia a 8.0) e prova del blocco (pulsante di merge grigio). | — |
 
 ---
 
@@ -184,6 +186,8 @@ L'analisi iniziale (18/11, in sola lettura) doveva trovare **3 errori**; ne sono
 | Test | offline con mock + live a parte | veloce, gratis, deterministico | solo test live (quota e lentezza) |
 | Git | branch + PR verso `main` | non rompere `main`, review tra pari | commit diretti su `main` |
 | Documenti | 5 file stabili: `AGENTS.md` (regole) + 4 di progetto | 9 file duplicavano le stesse informazioni | un `.md` per ogni sessione (illeggibile) |
+| CI | GitHub Actions, `windows-latest` + Python 3.14 | stessa piattaforma dello sviluppo: niente Linux da imparare ed errori riproducibili in locale | `ubuntu-latest` (più veloce, ma piattaforma diversa) |
+| Protezione `main` | PR obbligatoria + check obbligatorio, 0 approvazioni | un solo sviluppatore; il check sostituisce la review | approvazioni obbligatorie (impossibile mergiare da soli) |
 
 ### 6.2 Catena LLM in dettaglio
 
@@ -309,6 +313,7 @@ Piano proposto e non eseguito, in tre commit separati: rubrica dell'Evaluator (f
 | `python test_api_full.py` | ✅ | `/start` 200; 26.6 → `paura_superata: false`; 82.0 → `true` con 3 paure; `metrica_paura: chiarezza` |
 | TestClient offline | ✅ | profilo invalido 422; corso invalido 422; voto 11 → 422; lista vuota → 422; CORS 200 |
 | CV endpoint | ✅ | tipo non PDF → 415; PDF senza testo → 400 |
+| CI (GitHub Actions) | ✅ | verde su `main`; rosso con la soglia a 8.0 (`84/88`); merge reso impossibile dal check richiesto |
 
 Il **88/88 offline è verificato sul codice attuale**; il **91/91 live** è l'ultima esecuzione registrata e dipende da chiavi e quota, quindi va rilanciato quando serve dimostrarlo.
 
@@ -384,15 +389,18 @@ Nessun contenuto è andato perso: i 9 `.md` precedenti sono stati distribuiti co
 
 ## 11. Da fare adesso
 
-Il dettaglio è in [TODO.md](TODO.md). In breve, in quest'ordine:
+Il dettaglio è in [TODO.md](TODO.md).
 
-1. **CI su GitHub Actions** (`test.yml`: push e PR, Python 3.14 con fallback 3.13, `pip install -r requirements.txt`, `python test_enorme.py`) e poi **protezione di `main`** con il check obbligatorio: è ciò che rende vera la regola "solo a test verdi".
-2. **Hardening degli input**: `max_length` su `trascrizione`, `domanda` e `cv_json` nei modelli di `routers/sessions.py`, con test dedicati.
-3. **Igiene del repository**: `.gitattributes` (`* text=auto`) e `.editorconfig` UTF-8, per chiudere i due incidenti già visti (freeze UTF-16, fine riga incoerenti).
-4. **Qualità dei test**: `test_int_eval.py` senza assert e `test_api_full.py` che esce 0 anche quando il server non è attivo.
-5. **Baseline di demo**: server avviato, `test_api_full.py`, `/docs`, CORS e i codici 422/415/503 salvati come output attesi.
-6. **Handoff del contratto al team AR/VR**: `sessionId`, `audioUrl`, `visemi {"time": ms, "visemeId": int}`, `metrica_paura`, `prossime_paure`.
-7. **Integrazione** di Collega 2 (`/turn`, TTS) e Collega 1 (DB, auth, CV), poi frontend AR/VR, con review e merge a test verdi.
-8. **Prompt tuning** (vedi §6.9): rimandato, non è bloccante.
+**Fatto (Blocco 0.5, primi due task, 20/11):** CI su GitHub Actions (`windows-latest`, Python 3.14) e protezione di `main` con il check `suite offline` obbligatorio. Entrambe verificate rompendo la soglia di proposito: `84/88` e pulsante di merge grigio.
 
-Bloccato e da non iniziare ora: il punto 7 dipende dalle PR dei colleghi.
+**Da fare, in quest'ordine:**
+
+1. **Hardening degli input**: `max_length` su `trascrizione`, `domanda` e `cv_json` nei modelli di `routers/sessions.py`, con test dedicati.
+2. **Igiene del repository**: `.gitattributes` (`* text=auto`) e `.editorconfig` UTF-8, per chiudere i due incidenti già visti (freeze UTF-16, fine riga incoerenti).
+3. **Qualità dei test**: `test_int_eval.py` senza assert e `test_api_full.py` che esce 0 anche quando il server non è attivo.
+4. **Baseline di demo**: server avviato, `test_api_full.py`, `/docs`, CORS e i codici 422/415/503 salvati come output attesi.
+5. **Handoff del contratto al team AR/VR**: `sessionId`, `audioUrl`, `visemi {"time": ms, "visemeId": int}`, `metrica_paura`, `prossime_paure`.
+6. **Integrazione** di Collega 2 (`/turn`, TTS) e Collega 1 (DB, auth, CV), poi frontend AR/VR, con review e merge a test verdi.
+7. **Prompt tuning** (vedi §6.9): rimandato, non è bloccante.
+
+Bloccato e da non iniziare ora: il punto 6 dipende dalle PR dei colleghi.

@@ -34,7 +34,6 @@ Questo è **l'unico documento dei task** di HireMate: sostituisce `split_lavoro.
 - `/end` che legge valutazioni e report dal DB (oggi si fida del client).
 - Frontend (team AR/VR).
 - Review delle PR nuove e merge su `main`.
-- CI su GitHub Actions e protezione di `main` (oggi nulla impedisce un merge rosso).
 - Hardening degli input (`max_length` su trascrizione, domanda, `cv_json`).
 - Igiene del repository (`.gitattributes`, `.editorconfig`).
 - Test senza assert (`test_int_eval.py`) e `test_api_full.py` che esce 0 con server spento.
@@ -57,8 +56,8 @@ Vista d'insieme, in ordine di milestone. Il dettaglio per persona è nelle sezio
 
 Sono le cose che rendono sicuri tutti gli altri blocchi: prima la CI, poi la protezione del branch.
 
-- [ ] **CI su GitHub Actions**: `.github/workflows/test.yml` su push e PR; Python 3.14 con fallback 3.13; `pip install -r requirements.txt`; `python test_enorme.py`. Verde su una PR di prova, rosso se si rompe un test di proposito.
-- [ ] **Protezione di `main`**: check della CI obbligatorio, merge solo via PR. Oggi `main` non è protetta.
+- [x] **CI su GitHub Actions**: `.github/workflows/test.yml` su push e PR; Python 3.14 con fallback 3.13; `pip install -r requirements.txt`; `python test_enorme.py`. Verificata: verde su `main`, rossa con la soglia portata a 8.0 (`84/88`).
+- [x] **Protezione di `main`**: PR obbligatoria e check `suite offline` richiesto; la prova del blocco è stata fatta (merge grigio con la CI rossa).
 - [ ] **Hardening degli input**: `max_length` su `trascrizione`, `domanda` e `cv_json` nei modelli di `routers/sessions.py` (es. 2000 caratteri) → `422`, con test dedicati.
 - [ ] **Igiene del repository**: `.gitattributes` (`* text=auto`) e `.editorconfig` (UTF-8), per chiudere i due incidenti già visti: freeze UTF-16 e fine riga incoerenti.
 - [ ] **Qualità dei test**: `test_int_eval.py` senza assert (o lo si rende un test vero, o diventa `demo_int_eval.py`) e `test_api_full.py` che oggi esce 0 anche quando il server non è attivo.
@@ -431,7 +430,7 @@ Serve al backend sapere **cosa** il frontend si aspetta; questi punti vanno conc
 | Blocco | Contenuto | Chi | Tempo indicativo |
 |---|---|---|---|
 | **Blocco 0 — Sbloccare** | Allineamento, contratto `sessionId`, PR | Stream 3 | 2-3 ore |
-| **Blocco 0.5 — Guardrail** | CI, protezione `main`, hardening, igiene, qualità test, baseline | Stream 3 | ~3 ore |
+| **Blocco 0.5 — Guardrail** | CI e protezione fatti; restano hardening, igiene, qualità test, baseline | Stream 3 | ~2 ore |
 | **Blocco 1 — Fondamenta** | Schema Supabase + client + auth; spike TTS + `/turn` mock; test estesi | C1, C2, S3 (parallelo) | 2-3 giorni |
 | **Blocco 2 — Integrazione** | CV salvato, `/end` dal DB; `/turn` reale, audio su `/start` | C1, C2, S3 | 3-4 giorni |
 | **Blocco 3 — Chiusura** | End-to-end 6 turni, frontend, demo, documenti, merge | Tutti | 1-2 giorni |
@@ -443,7 +442,7 @@ Serve al backend sapere **cosa** il frontend si aspetta; questi punti vanno conc
 ## 10. Rischi e decisioni aperte
 
 - **Base allineata:** `main` è allineata a `origin/main`; ogni stream brancha da lì per non divergere.
-- **Nessun guardrail automatico:** senza CI un test rosso può essere mergiato, e `main` non è protetta. Sono i primi due task del Blocco 0.5.
+- **Guardrail attivi:** `main` è protetta (PR obbligatoria + check `suite offline`). Resta scoperto un caso: la CI è verde anche se qualcuno **cancella** un test, perché il totale non viene confrontato con 88.
 - **OneDrive:** `git fetch --prune` può fermarsi su `Deletion of directory ... failed` (directory-reparse). Risposta `n`, poi `git update-ref -d <ref>`; non è corruzione del repo.
 - **DeepSeek:** è a pagamento e resta l'ultima risorsa; monitorare chiave e costi, non usarlo nei test di massa.
 - **Contratto `sessionId`:** va congelato prima di DB e `/turn`, altrimenti si sovrascrivono.

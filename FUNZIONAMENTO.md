@@ -403,8 +403,16 @@ Esempio (19/11): l'utente ha chiesto di committare e pushare le modifiche fino a
 
 - `SEC_E_NO_CREDENTIALS` non è un problema del repo: le operazioni git le fa l'utente nel suo terminale.
 - Su OneDrive `git fetch --prune` può chiedere più volte `Deletion of directory ... failed`: rispondere **`n`**, poi `git update-ref -d <ref>` per i ref rimasti. Sono reparse point di OneDrive, non branch veri.
-- **Preferenza dell'utente:** branch, PR, merge e cancellazione branch si fanno dal **sito GitHub**; il terminale serve solo per `pull`/`push` dei file che stanno sul disco (il sito non li vede finché non sono pushati).
+- **Divisione dei compiti (preferenza dell'utente):** le modifiche si fanno in **VS Code**; branch, commit e push dal **terminale di VS Code**; pull request, merge e cancellazione dei branch dal **sito GitHub**.
 - **Lo stato si scrive in un punto solo:** la sezione "Stato attuale" del README e il diario del RECAP. Ripetere hash, date e numeri di PR in cinque file è il modo più rapido per farli divergere.
+
+### 5.14 Un check verde non visto fallire non è una prova
+
+La CI può essere verde perché **non esegue niente**: file sbagliato, comando sbagliato, evento che non la triggera. L'unico modo per sapere che il check misura qualcosa è rompere il codice di proposito e vedere il rosso.
+
+Esempio (20/11): `SOGLIA_METRICA_PAURA` portata da 7.5 a 8.0 su un branch usa-e-getta ha fatto cadere 4 test (`La soglia è 7.5` più tre del Reporter) e, con la protezione attiva, ha reso grigio il pulsante di merge. Senza quella prova la protezione sarebbe stata solo una casella spuntata.
+
+Corollario: la prova si fa su un branch che poi si chiude senza mergiare, e si chiude con la suite di nuovo verde — `84/88` con la modifica, `88/88` dopo. Un rosso senza il ritorno al verde non distingue un test rotto da un errore di configurazione.
 
 ---
 
@@ -415,6 +423,7 @@ Esempio (19/11): l'utente ha chiesto di committare e pushare le modifiche fino a
 - `test_enorme.py` è una suite di **88 test automatici offline**: non chiama nessun LLM, non consuma quota, dura pochi secondi.
 - Con `--live` aggiunge **3 chiamate vere** a Gemini Lite e arriva a **91 test**.
 - L'output finale è `TOTALE: 88   PASSATI: 88   FALLITI: 0`; se un test fallisce compare `❌ nome del test -> errore` con il traceback.
+- **In CI** (`.github/workflows/test.yml`) gira esattamente `python test_enorme.py` su `windows-latest` con Python 3.14, a ogni PR e a ogni push su `main`; `main` è protetta e il merge richiede il check `suite offline`. I test live restano fuori: chiavi e quota non stanno nella CI.
 
 ### 6.2 Mock vs live: la spiegazione semplice
 
