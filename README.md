@@ -46,6 +46,7 @@ Lo **stato** vive in un punto solo: la sezione "Stato attuale" qui sotto e il di
 | `routers/sessions.py` | Modelli Pydantic e endpoint `/start`, `/end`; contratti `/turn`. |
 | `routers/cv.py` | Endpoint `POST /api/cv/parse` (PDF → JSON). |
 | `test_enorme.py` | Suite principale: 88 test offline, 91 con `--live`. |
+| `test_hardening_input.py` | Suite dei limiti di input: 10 test offline. |
 | `test_reporter.py` | Test offline della regola "paura superata". |
 | `test_sistema.py`, `test_interviewer.py`, `test_int_eval.py`, `test_api_full.py` | Test con LLM reale / API reale. |
 | `.env.example` | Modello delle variabili d'ambiente (da copiare in `.env`). |
@@ -54,7 +55,8 @@ Lo **stato** vive in un punto solo: la sezione "Stato attuale" qui sotto e il di
 ### Stato attuale (20/11/2026)
 
 - `main` è allineata a `origin/main`, senza commit locali in sospeso né branch aperti: il backend GenAI è **mergiato e pushato**. L'elenco di PR e commit sta nel diario di [RECAP.md](RECAP.md), così qui non serve aggiornarlo a ogni merge.
-- CI: ogni PR e ogni push su `main` eseguono la suite offline (88 test) su Windows con Python 3.14; il merge su `main` richiede il check verde `suite offline`.
+- CI: ogni PR e ogni push su `main` eseguono le due suite offline (88 + 10 test) su Windows con Python 3.14; il merge su `main` richiede il check verde `suite offline`.
+- Hardening: `trascrizione` max 2000 caratteri, `domanda` max 500, `cv_json` max 4096 byte; oltre il limite la risposta è `422` e l'LLM non viene chiamato.
 - Funzionanti e testati: `/api/cv/parse`, `/api/session/start`, `/api/session/end`.
 - Non ancora implementati: `POST /api/session/turn`, Supabase, auth, TTS/visemi, montaggio `static/`.
 - Test: **88/88 offline**; **91/91 con `--live`** (3 chiamate reali).
@@ -122,6 +124,16 @@ La regola è in Python puro (`agenti/reporter.py`): deterministica, testabile, s
 ---
 
 ## 🔌 API
+
+### Limiti di input
+
+| Campo | Limite | Oltre il limite |
+|---|---|---|
+| `trascrizione` | 2000 caratteri | `422` |
+| `domanda` | 500 caratteri | `422` |
+| `cv_json` | 4096 byte (JSON serializzato) | `422` |
+
+I limiti stanno nei modelli di `routers/sessions.py` (costanti `MAX_*`), quindi valgono **prima** di qualsiasi chiamata all'LLM: un payload abnorme non consuma quota. Anche `Turno`, cioè la cronologia, eredita gli stessi limiti.
 
 ### `POST /api/cv/parse`
 
@@ -228,8 +240,9 @@ python main.py                 # http://127.0.0.1:8000/docs
 ## 🧪 Test
 
 ```powershell
-python test_enorme.py          # 88 test offline, mock LLM, nessuna quota
-python test_enorme.py --live   # 91 test (aggiunge 3 chiamate reali a Gemini Lite)
+python test_enorme.py           # 88 test offline, mock LLM, nessuna quota
+python test_enorme.py --live    # 91 test (aggiunge 3 chiamate reali a Gemini Lite)
+python test_hardening_input.py  # 10 test offline sui limiti di input
 ```
 
 Output atteso:
@@ -241,15 +254,18 @@ TOTALE: 88   PASSATI: 88   FALLITI: 0
 
 Con `--live` l'output atteso è `TOTALE: 91   PASSATI: 91   FALLITI: 0` (le 3 chiamate reali dipendono da chiavi e quota).
 
+`test_hardening_input.py` è la seconda suite offline: ogni esecuzione deve dare `TOTALE: 10   PASSATI: 10`. Entrambe le suite controllano anche il **numero di casi eseguiti** (`CASI_ATTESI`): se un test sparisce, il totale non torna e l'esecuzione esce con codice 1. La CI le esegue entrambe.
+
 | Comando | Cosa verifica | Rete |
 |---|---|---|
 | `python test_enorme.py` | 9 sezioni: profilo, corsi, LLM, interviewer, evaluator, reporter, modelli/API, CV, config e documenti | no |
 | `python test_enorme.py --live` | le 3 sezioni live: domanda vera, evaluator severo, reporter con LLM | sì |
+| `python test_hardening_input.py` | limiti di input: valori al limite accettati, oltre il limite `422`, cronologia e `cv_json` compresi | no |
 | `python test_reporter.py` | regola "paura superata" (soglia 7.4/7.5, sticky, reset) | no |
 | `python test_sistema.py` | corsi + LLM + evaluator | sì |
 | `python test_interviewer.py` | due domande, con e senza CV | sì |
-| `python test_int_eval.py` | catena Interviewer → Evaluator | sì |
-| `python test_api_full.py` | `/start` e `/end` via HTTP (richiede il server attivo su `:8000`) | sì |
+| `python test_int_eval.py` | catena Interviewer → Evaluator, con assert sul contratto della valutazione | sì |
+| `python test_api_full.py` | `/health`, `/start` e due `/end` via HTTP; esce 1 se il server è spento (richiede `:8000`) | sì |
 
 Cosa testa ogni sezione e come leggere i fallimenti: [FUNZIONAMENTO.md](FUNZIONAMENTO.md#6-i-test-come-funzionano-e-cosa-coprono).
 

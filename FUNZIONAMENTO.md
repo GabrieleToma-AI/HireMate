@@ -231,6 +231,7 @@ Modelli Pydantic e due endpoint.
 | `Turno`, `TurnRequest`, `TurnResponse` | **Contratto pronto** per l'endpoint `/turn` di Collega 2. |
 
 - `DOMANDE_PER_COLLOQUIO = 6`: il colloquio si chiude quando ci sono abbastanza informazioni, non con un timer brusco.
+- `MAX_TRASCRIZIONE = 2000`, `MAX_DOMANDA = 500`, `MAX_CV_JSON = 4096`: limiti di input applicati dai modelli (`Field(max_length=...)` e tipo `CvJson`, che misura i byte del JSON). Scattano prima dell'LLM, quindi un payload abnorme costa `422` e zero quota. Anche `Turno` (la cronologia) li eredita.
 - `turnId = f"turn-{uuid4().hex}"`: univoco a ogni chiamata.
 - `visemes: list = Field(default_factory=list)`: niente default mutabile condiviso tra richieste.
 - Errori: `CorsoNonValidoError` → `400`, `LLMError` → `503`, altro → `500` con log dettagliato e messaggio generico.
@@ -389,7 +390,7 @@ Non basta che il codice compili: l'ordine dei controlli è quello che distingue 
 3. **Errore volutamente sbagliato** (modello inesistente) → l'eccezione arriva come `LLMError` e non come eccezione grezza del client? Altrimenti la catena non la intercetta e l'API risponde 500 invece di 503.
 4. **Catena completa** con i primi provider forzati a fallire → il fallback arriva davvero in fondo? (FreeLLMAPI giù + Gemini giù → DeepSeek, 1.1s)
 
-Poi la suite offline: 88/88, che deve restare tale anche con la chiave nel `.env`.
+Poi la suite offline deve restare verde, anche con la chiave nel `.env` (i test mockano i provider).
 
 ### 5.12 La sola lettura si sospende solo su richiesta esplicita
 
@@ -414,16 +415,31 @@ Esempio (20/11): `SOGLIA_METRICA_PAURA` portata da 7.5 a 8.0 su un branch usa-e-
 
 Corollario: la prova si fa su un branch che poi si chiude senza mergiare, e si chiude con la suite di nuovo verde — `84/88` con la modifica, `88/88` dopo. Un rosso senza il ritorno al verde non distingue un test rotto da un errore di configurazione.
 
+### 5.15 Un fatto, un proprietario
+
+La duplicazione non è il problema: lo è ripetere lo **stato** in documenti che non lo possiedono. Il 20/11 `88/88` era scritto in 55 punti e `main` in sei; ogni merge lasciava indietro qualcosa.
+
+- **Stato** (conteggi, PR, commit, branch, quanti documenti): un solo posto — "Stato attuale" del README e diario del RECAP. Gli altri rimandano.
+- **Struttura dei file**: tabella del README. FUNZIONAMENTO spiega i file, non li elenca; il RECAP non ridisegna l'albero.
+- **Contratto API attuale**: README. TODO tiene solo ciò che è in transizione (`/turn`, `/end` dal DB, auth).
+- **Decisioni e perché**: RECAP §6. FUNZIONAMENTO cita la regola, non la decisione.
+- **Storia**: il diario del RECAP non si riscrive, anche quando i numeri cambiano.
+- **`AGENTS.md`**: eccezione dichiarata: duplica i valori stabili perché è il contesto dell'agente, ma se contraddice il codice vince il codice.
+
+Esempio: aggiungere un caso a `test_enorme.py` costa due modifiche nel README (numero e output) e una a `CASI_ATTESI` nella suite, non venti sparse in quattro documenti.
+
 ---
 
 ## 6. I test: come funzionano e cosa coprono
 
 ### 6.1 In 30 secondi
 
-- `test_enorme.py` è una suite di **88 test automatici offline**: non chiama nessun LLM, non consuma quota, dura pochi secondi.
-- Con `--live` aggiunge **3 chiamate vere** a Gemini Lite e arriva a **91 test**.
-- L'output finale è `TOTALE: 88   PASSATI: 88   FALLITI: 0`; se un test fallisce compare `❌ nome del test -> errore` con il traceback.
-- **In CI** (`.github/workflows/test.yml`) gira esattamente `python test_enorme.py` su `windows-latest` con Python 3.14, a ogni PR e a ogni push su `main`; `main` è protetta e il merge richiede il check `suite offline`. I test live restano fuori: chiavi e quota non stanno nella CI.
+- `test_enorme.py` è la suite principale, **offline**: non chiama nessun LLM, non consuma quota, dura pochi secondi. I numeri aggiornati stanno nel [README](README.md#-test).
+- Con `--live` aggiunge **3 chiamate vere** a Gemini Lite.
+- `test_hardening_input.py` è la seconda suite offline: verifica i limiti di input e che oltre il limite arrivi `422`.
+- Ogni suite controlla anche **quanti** casi ha eseguito (`CASI_ATTESI`): se qualcuno cancella un test, il totale non torna e l'esecuzione esce con codice 1.
+- L'output finale riporta `TOTALE`, `PASSATI`, `FALLITI`; se un test fallisce compare `❌ nome del test -> errore` con il traceback.
+- **In CI** (`.github/workflows/test.yml`) girano esattamente `python test_enorme.py` e `python test_hardening_input.py` su `windows-latest` con Python 3.14, a ogni PR e a ogni push su `main`; `main` è protetta e il merge richiede il check `suite offline`. I test live restano fuori: chiavi e quota non stanno nella CI.
 
 ### 6.2 Mock vs live: la spiegazione semplice
 
@@ -432,7 +448,7 @@ Immagina un'auto:
 - **Test offline = crash test con il manichino.** Proviamo tutti gli urti possibili senza rischiare persone vere. Il manichino è il "finto LLM": simuliamo `503`, timeout, JSON rotto, voti sballati. Velocissimo, gratis, ripetibile.
 - **Test live = giro su strada con l'auto vera.** Facciamo 3 chiamate reali a Gemini Lite per verificare che il motore sia collegato e che l'Evaluator non premi una risposta povera.
 
-Servono entrambi: il crash test non dimostra che l'auto parte; il giro su strada non può simulare 88 incidenti diversi.
+Servono entrambi: il crash test non dimostra che l'auto parte; il giro su strada non può simulare tutti gli incidenti.
 
 ### 6.3 Cosa testa, sezione per sezione
 
@@ -468,7 +484,7 @@ I comandi per eseguirli sono nel [README](README.md#-test).
 >
 > Oggi: le 3 risposte della profilazione sono validate contro liste ufficiali; la paura si supera solo quando **la metrica specifica** arriva a 7.5/10 (es. chiarezza per "restare senza parole"); una volta superata resta superata, ma se cambi paura riparte; l'Interviewer riceve la cronologia e non ripete; l'Evaluator dà 1-3 alle risposte povere; il backend ha CORS, errori HTTP chiari e un endpoint per il CV in PDF.
 >
-> Il test enorme verifica 88 casi offline in pochi secondi, senza consumare quota. Con `--live` fa anche 3 chiamate vere a Gemini Lite: una domanda, una valutazione severa (4/1/1 su una risposta povera) e un report (80/100). I test offline servono per la logica e i casi limite; quelli live per dimostrare che l'LLM è davvero collegato.
+> La suite offline verifica i casi principali in pochi secondi, senza consumare quota. Con `--live` fa anche 3 chiamate vere a Gemini Lite: una domanda, una valutazione severa (4/1/1 su una risposta povera) e un report (80/100). I test offline servono per la logica e i casi limite; quelli live per dimostrare che l'LLM è davvero collegato.
 >
 > Il backend è mergiato in `main`. Mancano `/turn`, database, auth e voce dell'avatar: sono nel TODO diviso tra noi tre.»
 

@@ -8,32 +8,13 @@ Registro di **cosa è stato fatto** e **perché il codice è così**. Sostituisc
 
 ## 1. Stato in una frase
 
-Il backend GenAI di HireMate è **mergiato su `main`**, con profilo validato, paura misurata sulla metrica specifica (7.5/10), cronologia nell'Interviewer, Evaluator severo, endpoint CV, catena LLM a tre provider e **88 test offline verdi**. Mancano: endpoint `/turn`, Supabase, auth, TTS/visemi e frontend.
+Il backend GenAI di HireMate è **mergiato su `main`**, con profilo validato, paura misurata sulla metrica specifica (7.5/10), cronologia nell'Interviewer, Evaluator severo, endpoint CV, catena LLM a tre provider, **suite offline verdi** e CI obbligatoria. Mancano: endpoint `/turn`, Supabase, auth, TTS/visemi e frontend.
 
 ---
 
 ## 2. Cosa c'è oggi nel repository
 
-```text
-main.py              FastAPI + CORS + router
-corsi.py             14 corsi ITS
-profilo.py           3 liste + METRICA_PER_PAURA + soglia 7.5
-agenti/
-  llm.py             FreeLLMAPI -> Gemini Lite -> DeepSeek
-  interviewer.py     domanda con cronologia
-  evaluator.py       valutazione 1-10
-  reporter.py        report + regola paura
-  cv_parser.py       PDF -> JSON
-routers/
-  sessions.py        /start, /end + contratti /turn
-  cv.py              POST /api/cv/parse
-test_enorme.py       88 test offline (91 con --live)
-test_reporter.py     regola paura, offline
-test_sistema.py, test_interviewer.py, test_int_eval.py, test_api_full.py
-requirements.txt     dipendenze dirette, UTF-8
-.env.example         modello delle variabili
-README.md, FUNZIONAMENTO.md, RECAP.md, TODO.md
-```
+La struttura file per file sta nella tabella del [README](README.md#️-struttura): qui non si ripete, così non può divergere.
 
 **Non presenti:** `database/`, `routers/users.py`, `routers/turn.py`, `agenti/tts.py`, `static/`, frontend.
 
@@ -62,6 +43,8 @@ README.md, FUNZIONAMENTO.md, RECAP.md, TODO.md
 | 20/11 | Merge della PR #6: allineamento documenti (cinque file, Blocco 0.5 nel TODO, diagnosi dei prompt in §6.9). | `073ead6` |
 | 20/11 | Merge della PR #7: CI su GitHub Actions, suite offline su Windows e Python 3.14 a ogni PR e push su `main`. | `df1cb42` |
 | 20/11 | Protezione di `main`: PR obbligatoria e check `suite offline` richiesto; prova del rosso (84/88 con la soglia a 8.0) e prova del blocco (pulsante di merge grigio). | — |
+| 20/11, 15:18 | Merge della PR #11: limiti di input (2000/500/4096), nuova suite `test_hardening_input.py`, CI spostata su Windows. | `d227db2` |
+| 20/11, 15:28 | Merge della PR #12: assert e codici di uscita nei test live, guardia `CASI_ATTESI` sul numero di casi. | `81d4768` |
 
 ---
 
@@ -188,6 +171,8 @@ L'analisi iniziale (18/11, in sola lettura) doveva trovare **3 errori**; ne sono
 | Documenti | 5 file stabili: `AGENTS.md` (regole) + 4 di progetto | 9 file duplicavano le stesse informazioni | un `.md` per ogni sessione (illeggibile) |
 | CI | GitHub Actions, `windows-latest` + Python 3.14 | stessa piattaforma dello sviluppo: niente Linux da imparare ed errori riproducibili in locale | `ubuntu-latest` (più veloce, ma piattaforma diversa) |
 | Protezione `main` | PR obbligatoria + check obbligatorio, 0 approvazioni | un solo sviluppatore; il check sostituisce la review | approvazioni obbligatorie (impossibile mergiare da soli) |
+| Limiti di input | 2000 / 500 / 4096, nei modelli Pydantic | scattano prima dell'LLM: payload abnorme = `422` e zero quota | validarli negli agenti (errore tardi, senza `422`) |
+| Guardia sui test | `CASI_ATTESI` dentro ogni suite | un test cancellato fa fallire l'esecuzione | numero atteso scritto nella CI (un altro posto da aggiornare) |
 
 ### 6.2 Catena LLM in dettaglio
 
@@ -302,10 +287,13 @@ Piano proposto e non eseguito, in tre commit separati: rubrica dell'Evaluator (f
 
 ## 7. Test: risultati
 
+I numeri correnti stanno nel [README](README.md#-test); qui c'è la fotografia del 20/11, che non si aggiorna a ogni test aggiunto.
+
 | Test | Esito | Note |
 |---|---|---|
 | `python test_enorme.py` | ✅ **88/88** | offline, mock LLM, nessuna quota |
 | `python test_enorme.py --live` | ✅ **91/91** | 3 chiamate reali: domanda, evaluator 4/1/1, reporter 80.0 |
+| `python test_hardening_input.py` | ✅ **10/10** | limiti di input, offline |
 | `python test_reporter.py` | ✅ | 7.4 → non superata; 7.5 → superata; metrica specifica; sticky; reset |
 | `python test_sistema.py` | ✅ | corsi, LLM, evaluator (FreeLLMAPI offline → Gemini Lite) |
 | `python test_interviewer.py` | ✅ | due domande, con e senza CV |
@@ -315,7 +303,7 @@ Piano proposto e non eseguito, in tre commit separati: rubrica dell'Evaluator (f
 | CV endpoint | ✅ | tipo non PDF → 415; PDF senza testo → 400 |
 | CI (GitHub Actions) | ✅ | verde su `main`; rosso con la soglia a 8.0 (`84/88`); merge reso impossibile dal check richiesto |
 
-Il **88/88 offline è verificato sul codice attuale**; il **91/91 live** è l'ultima esecuzione registrata e dipende da chiavi e quota, quindi va rilanciato quando serve dimostrarlo.
+Le suite offline sono verificate sul codice attuale; il live è l'ultima esecuzione registrata e dipende da chiavi e quota, quindi va rilanciato quando serve dimostrarlo.
 
 ---
 
@@ -331,7 +319,7 @@ Il **88/88 offline è verificato sul codice attuale**; il **91/91 live** è l'ul
 | **API** | Nessun CORS, `turnId` fisso, 503 per corso errato, errori interni esposti | CORS, `turnId` univoco, 422 per input errato, 400/422/503/500 generici |
 | **CV** | Nessun endpoint | `POST /api/cv/parse`: PDF max 5 MB → `cv_json` con `pypdf` + LLM |
 | **Dipendenze** | `requirements.txt` in UTF-16, mancava `google-genai` | UTF-8, `google-genai`, `pypdf`, `python-multipart` |
-| **Test** | Firme vecchie, test rotti | Test allineati, `test_reporter.py` e `test_enorme.py` (88 offline / 91 live) |
+| **Test** | Firme vecchie, test rotti | Due suite offline (`test_enorme.py`, `test_hardening_input.py`), live a parte, guardia sul numero di casi |
 | **Documenti** | README e funzionamento vecchi, 9 file sparsi | 5 file stabili: `AGENTS.md`, README, FUNZIONAMENTO, RECAP, TODO |
 
 ---
@@ -346,8 +334,8 @@ Il **88/88 offline è verificato sul codice attuale**; il **91/91 live** è l'ul
 cd C:\Users\gabri\OneDrive\Desktop\HireMate
 .\venv\Scripts\Activate.ps1
 
-python test_enorme.py          # 88 test offline, mock LLM
-python test_enorme.py --live   # 91 test (3 chiamate reali)
+python test_enorme.py          # suite offline, mock LLM
+python test_enorme.py --live   # con 3 chiamate reali
 
 python main.py                 # server su http://127.0.0.1:8000/docs
 
@@ -391,16 +379,14 @@ Nessun contenuto è andato perso: i 9 `.md` precedenti sono stati distribuiti co
 
 Il dettaglio è in [TODO.md](TODO.md).
 
-**Fatto (Blocco 0.5, primi due task, 20/11):** CI su GitHub Actions (`windows-latest`, Python 3.14) e protezione di `main` con il check `suite offline` obbligatorio. Entrambe verificate rompendo la soglia di proposito: `84/88` e pulsante di merge grigio.
+**Fatto (Blocco 0.5, quattro task su sei, 20/11):** CI su GitHub Actions (`windows-latest`, Python 3.14), protezione di `main` con il check `suite offline` obbligatorio, hardening degli input (2000/500/4096) e qualità dei test (assert nei test live, guardia `CASI_ATTESI`). CI e blocco verificati rompendo la soglia di proposito: `84/88` e pulsante di merge grigio.
 
 **Da fare, in quest'ordine:**
 
-1. **Hardening degli input**: `max_length` su `trascrizione`, `domanda` e `cv_json` nei modelli di `routers/sessions.py`, con test dedicati.
-2. **Igiene del repository**: `.gitattributes` (`* text=auto`) e `.editorconfig` UTF-8, per chiudere i due incidenti già visti (freeze UTF-16, fine riga incoerenti).
-3. **Qualità dei test**: `test_int_eval.py` senza assert e `test_api_full.py` che esce 0 anche quando il server non è attivo.
-4. **Baseline di demo**: server avviato, `test_api_full.py`, `/docs`, CORS e i codici 422/415/503 salvati come output attesi.
-5. **Handoff del contratto al team AR/VR**: `sessionId`, `audioUrl`, `visemi {"time": ms, "visemeId": int}`, `metrica_paura`, `prossime_paure`.
-6. **Integrazione** di Collega 2 (`/turn`, TTS) e Collega 1 (DB, auth, CV), poi frontend AR/VR, con review e merge a test verdi.
-7. **Prompt tuning** (vedi §6.9): rimandato, non è bloccante.
+1. **Igiene del repository**: `.gitattributes` (`* text=auto`) e `.editorconfig` UTF-8, per chiudere i due incidenti già visti (freeze UTF-16, fine riga incoerenti).
+2. **Baseline di demo**: server avviato, `test_api_full.py`, `/docs`, CORS e i codici 422/415/503 salvati come output attesi.
+3. **Handoff del contratto al team AR/VR**: `sessionId`, `audioUrl`, `visemi {"time": ms, "visemeId": int}`, `metrica_paura`, `prossime_paure`.
+4. **Integrazione** di Collega 2 (`/turn`, TTS) e Collega 1 (DB, auth, CV), poi frontend AR/VR, con review e merge a test verdi.
+5. **Prompt tuning** (vedi §6.9): rimandato, non è bloccante.
 
-Bloccato e da non iniziare ora: il punto 6 dipende dalle PR dei colleghi.
+Bloccato e da non iniziare ora: il punto 4 dipende dalle PR dei colleghi.

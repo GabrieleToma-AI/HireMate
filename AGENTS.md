@@ -189,7 +189,7 @@ Regola: i primi due devono liberare il turno in fretta (l'utente è in attesa da
 
 | Codice | Quando |
 |---|---|
-| `422` | Input non valido: profilo fuori lista, corso inesistente, voti fuori range, lista vuota. Scatta **prima** dell'LLM. |
+| `422` | Input non valido: profilo fuori lista, corso inesistente, voti fuori range, lista vuota, limiti di input superati (`trascrizione` 2000 caratteri, `domanda` 500, `cv_json` 4096 byte). Scatta **prima** dell'LLM. |
 | `400` | PDF vuoto/illeggibile/senza testo; `CorsoNonValidoError` sollevata dentro l'endpoint (difensivo). |
 | `413` | PDF oltre 5 MB. |
 | `415` | File non PDF. |

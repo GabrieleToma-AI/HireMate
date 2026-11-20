@@ -21,7 +21,7 @@ Questo è **l'unico documento dei task** di HireMate: sostituisce `split_lavoro.
 - CV: `POST /api/cv/parse` (PDF max 5 MB → `cv_json`) con `pypdf` + LLM.
 - API: validazione Pydantic, `turnId` univoco, CORS, errori 400/422/503/500.
 - `TurnRequest` / `TurnResponse` / `Turno` pronti (manca solo l'endpoint `/turn`).
-- Test: `test_enorme.py` 88/88 offline; 91/91 con `--live`. Gli altri test sono verdi.
+- Test: due suite offline verdi (`test_enorme.py`, `test_hardening_input.py`), `--live` a parte; i numeri correnti stanno nel [README](README.md#-test).
 - Documenti: i 5 file attuali (`AGENTS.md`, `README.md`, `FUNZIONAMENTO.md`, `RECAP.md`, `TODO.md`).
 
 ### Non fatto (oggetto di questo TODO)
@@ -34,7 +34,6 @@ Questo è **l'unico documento dei task** di HireMate: sostituisce `split_lavoro.
 - `/end` che legge valutazioni e report dal DB (oggi si fida del client).
 - Frontend (team AR/VR).
 - Review delle PR nuove e merge su `main`.
-- Hardening degli input (`max_length` su trascrizione, domanda, `cv_json`).
 - Igiene del repository (`.gitattributes`, `.editorconfig`).
 - Test senza assert (`test_int_eval.py`) e `test_api_full.py` che esce 0 con server spento.
 
@@ -56,11 +55,11 @@ Vista d'insieme, in ordine di milestone. Il dettaglio per persona è nelle sezio
 
 Sono le cose che rendono sicuri tutti gli altri blocchi: prima la CI, poi la protezione del branch.
 
-- [x] **CI su GitHub Actions**: `.github/workflows/test.yml` su push e PR; Python 3.14 con fallback 3.13; `pip install -r requirements.txt`; `python test_enorme.py`. Verificata: verde su `main`, rossa con la soglia portata a 8.0 (`84/88`).
+- [x] **CI su GitHub Actions**: `.github/workflows/test.yml` su push e PR; Python 3.14; `pip install -r requirements.txt`; entrambe le suite offline. Verificata: verde su `main`, rossa con la soglia portata a 8.0 (`84/88`).
 - [x] **Protezione di `main`**: PR obbligatoria e check `suite offline` richiesto; la prova del blocco è stata fatta (merge grigio con la CI rossa).
-- [ ] **Hardening degli input**: `max_length` su `trascrizione`, `domanda` e `cv_json` nei modelli di `routers/sessions.py` (es. 2000 caratteri) → `422`, con test dedicati.
+- [x] **Hardening degli input**: `MAX_TRASCRIZIONE = 2000`, `MAX_DOMANDA = 500`, `MAX_CV_JSON = 4096` in `routers/sessions.py`, con la suite dedicata `test_hardening_input.py` (10 casi).
 - [ ] **Igiene del repository**: `.gitattributes` (`* text=auto`) e `.editorconfig` (UTF-8), per chiudere i due incidenti già visti: freeze UTF-16 e fine riga incoerenti.
-- [ ] **Qualità dei test**: `test_int_eval.py` senza assert (o lo si rende un test vero, o diventa `demo_int_eval.py`) e `test_api_full.py` che oggi esce 0 anche quando il server non è attivo.
+- [x] **Qualità dei test**: assert e codici di uscita in `test_int_eval.py` e `test_api_full.py`, più la guardia `CASI_ATTESI` in entrambe le suite (un test cancellato fa fallire l'esecuzione).
 - [ ] **Baseline di demo**: server avviato, `test_api_full.py`, `/docs`, CORS e codici 422/415/503 con output attesi salvati come riferimento.
 
 ### Blocco 1 — Fondamenta (in parallelo) `[C1]` `[C2]` `[S3]`
@@ -339,7 +338,7 @@ Il server legge dal DB valutazioni, profilo e report precedente. In transizione 
 
 - [ ] **Test reali utente scarso**: una risposta vuota/povera deve dare metriche basse; con `/turn` la valutazione è server-side, non più fidata dal client.
 - [ ] **Prompt** (diagnosi in [RECAP §6.9](RECAP.md#69-diagnosi-dei-prompt-rimandata)): rubrica esplicita per l'Evaluator, numero di domanda e copertura dei temi per l'Interviewer, limiti di lunghezza per il Reporter. Rimandato: non è bloccante.
-- [ ] **Test**: estendi `test_enorme.py` con `sessionId`, `/turn` (mock), DB/auth (mock), TTS (mock); mantieni 88/88 offline; live quando la modifica tocca l'LLM.
+- [ ] **Test**: estendi `test_enorme.py` con `sessionId`, `/turn` (mock), DB/auth (mock), TTS (mock); mantieni verdi le due suite offline e aggiorna `CASI_ATTESI`; live quando la modifica tocca l'LLM.
 - [ ] **Sicurezza**: niente chiavi, CORS, limiti di input, PIN hash, rate limit, errori generici.
 - [ ] **Contratto frontend**: conferma con AR/VR `sessionId`, `audioUrl`, `visemes`, `metrica_paura`, `prossime_paure`.
 - [ ] **Documenti**: aggiorna i 5 file a ogni cambio di contratto.
@@ -430,7 +429,7 @@ Serve al backend sapere **cosa** il frontend si aspetta; questi punti vanno conc
 | Blocco | Contenuto | Chi | Tempo indicativo |
 |---|---|---|---|
 | **Blocco 0 — Sbloccare** | Allineamento, contratto `sessionId`, PR | Stream 3 | 2-3 ore |
-| **Blocco 0.5 — Guardrail** | CI e protezione fatti; restano hardening, igiene, qualità test, baseline | Stream 3 | ~2 ore |
+| **Blocco 0.5 — Guardrail** | Fatti CI, protezione `main`, hardening e qualità test; restano igiene e baseline | Stream 3 | ~1 ora |
 | **Blocco 1 — Fondamenta** | Schema Supabase + client + auth; spike TTS + `/turn` mock; test estesi | C1, C2, S3 (parallelo) | 2-3 giorni |
 | **Blocco 2 — Integrazione** | CV salvato, `/end` dal DB; `/turn` reale, audio su `/start` | C1, C2, S3 | 3-4 giorni |
 | **Blocco 3 — Chiusura** | End-to-end 6 turni, frontend, demo, documenti, merge | Tutti | 1-2 giorni |
@@ -442,7 +441,7 @@ Serve al backend sapere **cosa** il frontend si aspetta; questi punti vanno conc
 ## 10. Rischi e decisioni aperte
 
 - **Base allineata:** `main` è allineata a `origin/main`; ogni stream brancha da lì per non divergere.
-- **Guardrail attivi:** `main` è protetta (PR obbligatoria + check `suite offline`). Resta scoperto un caso: la CI è verde anche se qualcuno **cancella** un test, perché il totale non viene confrontato con 88.
+- **Guardrail attivi:** `main` è protetta (PR obbligatoria + check `suite offline`) e ogni suite confronta il totale con `CASI_ATTESI`, quindi un test cancellato non passa più inosservato.
 - **OneDrive:** `git fetch --prune` può fermarsi su `Deletion of directory ... failed` (directory-reparse). Risposta `n`, poi `git update-ref -d <ref>`; non è corruzione del repo.
 - **DeepSeek:** è a pagamento e resta l'ultima risorsa; monitorare chiave e costi, non usarlo nei test di massa.
 - **Contratto `sessionId`:** va congelato prima di DB e `/turn`, altrimenti si sovrascrivono.
@@ -466,6 +465,6 @@ Serve al backend sapere **cosa** il frontend si aspetta; questi punti vanno conc
 5. [ ] Una risposta **volutamente scarsa** → metriche basse.
 6. [ ] `/end` → report, `paura_superata`, `metrica_paura`, `prossime_paure`.
 7. [ ] Modale "Promozione Paura" → scelta nuova paura → `PATCH update-fear`.
-8. [ ] Mostrare `python test_enorme.py` 88/88; `--live` quando serve dimostrare l'LLM reale.
+8. [ ] Mostrare le due suite offline verdi; `--live` quando serve dimostrare l'LLM reale.
 9. [ ] Mostrare branch/PR e i documenti aggiornati.
-10. [ ] Mostrare la CI verde su una PR di prova (quando il Blocco 0.5 è fatto).
+10. [x] Mostrare la CI verde su una PR di prova (fatto il 20/11, con prova del rosso e del blocco).
