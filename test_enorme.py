@@ -63,6 +63,9 @@ sys.stdout.reconfigure(encoding="utf-8")
 logging.disable(logging.CRITICAL)
 
 LIVE = "--live" in sys.argv
+# Guardiano contro i test che spariscono: ogni nuovo caso registrato con run.caso()
+# cambia questo numero. Se il totale non torna, il riepilogo esce con codice 1.
+CASI_ATTESI = 88
 
 BASE = Path(__file__).resolve().parent
 
@@ -225,6 +228,8 @@ class Runner:
         self.falliti = 0
         self.errori = []
         self.sezione_corrente = ""
+        # In modalita' live si aggiungono i 3 test della sezione 10.
+        self.attesi = CASI_ATTESI + (3 if LIVE else 0)
 
     def sezione(self, titolo: str):
         self.sezione_corrente = titolo
@@ -253,6 +258,12 @@ class Runner:
             print("\nDETTAGLIO FALLIMENTI")
             for sezione, nome, _, tb in self.errori:
                 print(f"\n[{sezione}] {nome}\n{tb}")
+            return 1
+        if totale != self.attesi:
+            print(
+                f"\n❌ Casi eseguiti: {totale}, attesi: {self.attesi}."
+                "\n   Se hai aggiunto o rimosso un test, aggiorna CASI_ATTESI."
+            )
             return 1
         print("\n🎉 TUTTI I TEST SONO PASSATI")
         return 0

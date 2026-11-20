@@ -64,7 +64,17 @@ async def main():
     print(f"✅ Esempi Concreti: {valutazione.get('esempi_concreti')}/10")
     print(f"\n💡 SUGGERIMENTO PER L'UTENTE:\n{valutazione.get('suggerimento')}")
     print(f"\n✨ BETTER ANSWER (Risposta Ideale):\n{valutazione.get('better_answer')}")
-    print("\n🏁 TEST COMPLETATO")
+
+    # Un test senza assert non è un test: se l'Evaluator esce dal contratto, deve fallire.
+    for chiave in ("chiarezza", "struttura_star", "esempi_concreti"):
+        valore = valutazione[chiave]
+        assert isinstance(valore, int), f"{chiave} non è un intero: {valore!r}"
+        assert 1 <= valore <= 10, f"{chiave} fuori range: {valore}"
+    assert valutazione["suggerimento"].strip(), "suggerimento vuoto"
+    assert valutazione["better_answer"].strip(), "better_answer vuota"
+
+    print("\n✅ CONTRATTO DELLA VALUTAZIONE RISPETTATO")
+    print("🏁 TEST COMPLETATO")
 
 
 if __name__ == "__main__":
