@@ -1,5 +1,7 @@
 # 📋 HIREMATE — Backend GenAI
 
+[![CI](https://github.com/GabrieleToma-AI/HireMate/actions/workflows/test.yml/badge.svg)](https://github.com/GabrieleToma-AI/HireMate/actions/workflows/test.yml)
+
 Simulatore di colloqui HR per studenti ITS ICT Piemonte. Il backend gestisce la profilazione, la generazione delle domande, la valutazione delle risposte e il report finale gamificato.
 
 - **Lingua:** italiano.
@@ -32,6 +34,7 @@ Lo **stato** vive in un punto solo: la sezione "Stato attuale" qui sotto e il di
 | File | Cosa fa |
 |---|---|
 | `AGENTS.md` | Contesto operativo dell'agente: regole stabili e trappole note, nessuno stato. |
+| `.github/workflows/test.yml` | CI: esegue `python test_enorme.py` su Windows e Python 3.14 a ogni PR e push su `main`. |
 | `main.py` | Crea FastAPI, configura il CORS, include i router. |
 | `corsi.py` | 14 corsi ITS con materie e focus HR; `get_dettagli_corso()`; `CorsoNonValidoError`. |
 | `profilo.py` | Le 3 liste della profilazione, `METRICA_PER_PAURA`, `SOGLIA_METRICA_PAURA = 7.5`. |
@@ -51,6 +54,7 @@ Lo **stato** vive in un punto solo: la sezione "Stato attuale" qui sotto e il di
 ### Stato attuale (20/11/2026)
 
 - `main` è allineata a `origin/main`, senza commit locali in sospeso né branch aperti: il backend GenAI è **mergiato e pushato**. L'elenco di PR e commit sta nel diario di [RECAP.md](RECAP.md), così qui non serve aggiornarlo a ogni merge.
+- CI: ogni PR e ogni push su `main` eseguono la suite offline (88 test) su Windows con Python 3.14; il merge su `main` richiede il check verde `suite offline`.
 - Funzionanti e testati: `/api/cv/parse`, `/api/session/start`, `/api/session/end`.
 - Non ancora implementati: `POST /api/session/turn`, Supabase, auth, TTS/visemi, montaggio `static/`.
 - Test: **88/88 offline**; **91/91 con `--live`** (3 chiamate reali).
