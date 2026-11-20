@@ -22,6 +22,8 @@ from routers.sessions import (
 sys.stdout.reconfigure(encoding="utf-8")
 
 CORSO = "Cyber Security Specialist"
+# Guardiano contro i test che spariscono: aggiungendo un caso, aggiorna questo numero.
+CASI_ATTESI = 10
 PROFILO = {
     "ansia_principale": "Restare senza parole",
     "stile_gestione_problemi": "Mi blocco e mi faccio prendere dal panico",
@@ -162,6 +164,10 @@ def main() -> int:
         f"FALLITI: {esiti['falliti']}"
     )
     print("=" * 60)
+    if totale != CASI_ATTESI:
+        print(f"\n❌ Casi eseguiti: {totale}, attesi: {CASI_ATTESI}.")
+        print("   Se hai aggiunto o rimosso un test, aggiorna CASI_ATTESI.")
+        return 1
     if esiti["falliti"]:
         print("\n❌ ALCUNI TEST SONO FALLITI")
         return 1
