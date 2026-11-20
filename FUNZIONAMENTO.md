@@ -462,7 +462,7 @@ Servono entrambi: il crash test non dimostra che l'auto parte; il giro su strada
 | **6. Reporter** | Overall, stats precedenti, sticky, reset, 3 opzioni, metrica che batte l'overall, soglia 7.4/7.5 | chiarezza 7.5 con overall basso → paura superata | È la regola nuova: conta la competenza specifica |
 | **7. Modelli e API** | Pydantic, `TurnRequest`/`TurnResponse`, `/start`, `/end`, `422/503/500`, `turnId` univoco, OpenAPI, CORS | profilo invalido → 422; LLM giù → 503 | Il frontend riceve errori chiari, non crash |
 | **8. CV** | PDF → testo → JSON, PDF vuoto/corrotto, limite 5 MB, endpoint 200/415/400/413/503/500 | PDF valido → `{"cv_json": ...}` | Il CV non deve far crashare il server |
-| **9. Config e documenti** | `requirements.txt` UTF-8 e dipendenze, `.env.example`, `.gitignore`, i 5 documenti (`AGENTS.md` compreso), input | niente `google-generativeai`, niente Gemini 3.8 | Il progetto si installa e i documenti sono allineati |
+| **9. Config e documenti** | `requirements.txt` UTF-8 e dipendenze, `.env.example`, `.gitignore`, i 5 documenti (`AGENTS.md` compreso), il diario del RECAP (3 colonne, ordine cronologico, soglia di righe), input | niente `google-generativeai`, niente Gemini 3.8 | Il progetto si installa, i documenti sono allineati e il diario non perde righe |
 | **10. LIVE** (solo `--live`) | Gemini vero: domanda reale, evaluator severo, reporter con LLM | risposta povera → 4/1/1 | Dimostra che il collegamento con l'LLM funziona davvero |
 
 ### 6.4 Se un test fallisce

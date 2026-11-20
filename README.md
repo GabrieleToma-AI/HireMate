@@ -45,7 +45,7 @@ Lo **stato** vive in un punto solo: la sezione "Stato attuale" qui sotto e il di
 | `agenti/cv_parser.py` | Estrae il testo dal PDF con `pypdf` e lo trasforma in JSON. |
 | `routers/sessions.py` | Modelli Pydantic e endpoint `/start`, `/end`; contratti `/turn`. |
 | `routers/cv.py` | Endpoint `POST /api/cv/parse` (PDF → JSON). |
-| `test_enorme.py` | Suite principale: 88 test offline, 91 con `--live`. |
+| `test_enorme.py` | Suite principale: 89 test offline, 92 con `--live`. |
 | `test_hardening_input.py` | Suite dei limiti di input: 10 test offline. |
 | `test_reporter.py` | Test offline della regola "paura superata". |
 | `test_sistema.py`, `test_interviewer.py`, `test_int_eval.py`, `test_api_full.py` | Test con LLM reale / API reale. |
@@ -55,11 +55,11 @@ Lo **stato** vive in un punto solo: la sezione "Stato attuale" qui sotto e il di
 ### Stato attuale (20/11/2026)
 
 - `main` è allineata a `origin/main`, senza commit locali in sospeso né branch aperti: il backend GenAI è **mergiato e pushato**. L'elenco di PR e commit sta nel diario di [RECAP.md](RECAP.md), così qui non serve aggiornarlo a ogni merge.
-- CI: ogni PR e ogni push su `main` eseguono le due suite offline (88 + 10 test) su Windows con Python 3.14; il merge su `main` richiede il check verde `suite offline`.
+- CI: ogni PR e ogni push su `main` eseguono le due suite offline (89 + 10 test) su Windows con Python 3.14; il merge su `main` richiede il check verde `suite offline`.
 - Hardening: `trascrizione` max 2000 caratteri, `domanda` max 500, `cv_json` max 4096 byte; oltre il limite la risposta è `422` e l'LLM non viene chiamato.
 - Funzionanti e testati: `/api/cv/parse`, `/api/session/start`, `/api/session/end`.
 - Non ancora implementati: `POST /api/session/turn`, Supabase, auth, TTS/visemi, montaggio `static/`.
-- Test: **88/88 offline**; **91/91 con `--live`** (3 chiamate reali).
+- Test: **89/89 offline**; **92/92 con `--live`** (3 chiamate reali).
 
 ---
 
@@ -240,19 +240,19 @@ python main.py                 # http://127.0.0.1:8000/docs
 ## 🧪 Test
 
 ```powershell
-python test_enorme.py           # 88 test offline, mock LLM, nessuna quota
-python test_enorme.py --live    # 91 test (aggiunge 3 chiamate reali a Gemini Lite)
+python test_enorme.py           # 89 test offline, mock LLM, nessuna quota
+python test_enorme.py --live    # 92 test (aggiunge 3 chiamate reali a Gemini Lite)
 python test_hardening_input.py  # 10 test offline sui limiti di input
 ```
 
 Output atteso:
 
 ```text
-TOTALE: 88   PASSATI: 88   FALLITI: 0
+TOTALE: 89   PASSATI: 89   FALLITI: 0
 🎉 TUTTI I TEST SONO PASSATI
 ```
 
-Con `--live` l'output atteso è `TOTALE: 91   PASSATI: 91   FALLITI: 0` (le 3 chiamate reali dipendono da chiavi e quota).
+Con `--live` l'output atteso è `TOTALE: 92   PASSATI: 92   FALLITI: 0` (le 3 chiamate reali dipendono da chiavi e quota).
 
 `test_hardening_input.py` è la seconda suite offline: ogni esecuzione deve dare `TOTALE: 10   PASSATI: 10`. Entrambe le suite controllano anche il **numero di casi eseguiti** (`CASI_ATTESI`): se un test sparisce, il totale non torna e l'esecuzione esce con codice 1. La CI le esegue entrambe.
 
