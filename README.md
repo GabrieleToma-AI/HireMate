@@ -11,16 +11,19 @@ Simulatore di colloqui HR per studenti ITS ICT Piemonte. Il backend gestisce la 
 
 ## 📚 I documenti del progetto
 
-Da questo momento i documenti sono **quattro** e stanno tutti nella root del progetto: niente più file sparsi che si duplicano.
+I documenti sono **cinque** e stanno tutti nella root del progetto: niente più file sparsi che si duplicano. Quattro raccontano il progetto; `AGENTS.md` fissa le regole stabili e viene già caricato all'inizio di ogni nuova chat.
 
 | Documento | Cosa contiene | Quando leggerlo |
 |---|---|---|
-| **`README.md`** (questo file) | Panoramica, struttura, API, setup, test, stato del progetto | Per primo |
+| [`AGENTS.md`](AGENTS.md) | Contesto operativo dell'agente: architettura, regole di dominio, contratti, convenzioni, trappole note. **Non** lo stato del progetto | Sempre: è già caricato |
+| **`README.md`** (questo file) | Panoramica, struttura, API, setup, test, stato del progetto | Per primo dopo `AGENTS.md` |
 | [`FUNZIONAMENTO.md`](FUNZIONAMENTO.md) | Guida didattica: cosa fa ogni file, flusso completo, concetti da esame, regole di lettura del codice, come funzionano i test, domande del prof | Per capire il codice |
 | [`RECAP.md`](RECAP.md) | Diario dei lavori, changelog, errori trovati e corretti, scelte di codice e di feature, come riprendere il progetto | Per capire *perché* il codice è così |
 | [`TODO.md`](TODO.md) | Cosa manca: TO DO generale + TO DO per ciascuno dei 3 AI engineer, contratto API, regole di lavoro, demo checklist | Per lavorare |
 
-Ordine consigliato in una nuova chat: **README → FUNZIONAMENTO → RECAP → TODO**.
+Ordine consigliato in una nuova chat: **`AGENTS.md`** (già caricato) → **README → FUNZIONAMENTO → RECAP → TODO**.
+
+Lo **stato** vive in un punto solo: la sezione "Stato attuale" qui sotto e il diario di `RECAP.md`. Gli altri documenti non ripetono hash e date, così non possono restare indietro.
 
 ---
 
@@ -28,6 +31,7 @@ Ordine consigliato in una nuova chat: **README → FUNZIONAMENTO → RECAP → T
 
 | File | Cosa fa |
 |---|---|
+| `AGENTS.md` | Contesto operativo dell'agente: regole stabili e trappole note, nessuno stato. |
 | `main.py` | Crea FastAPI, configura il CORS, include i router. |
 | `corsi.py` | 14 corsi ITS con materie e focus HR; `get_dettagli_corso()`; `CorsoNonValidoError`. |
 | `profilo.py` | Le 3 liste della profilazione, `METRICA_PER_PAURA`, `SOGLIA_METRICA_PAURA = 7.5`. |
@@ -46,7 +50,7 @@ Ordine consigliato in una nuova chat: **README → FUNZIONAMENTO → RECAP → T
 
 ### Stato attuale (20/11/2026)
 
-- `main` è allineata a `origin/main`; ultimo merge: PR #3 (contratto `sessionId`). Il backend GenAI è **mergiato e pushato**.
+- `main` è allineata a `origin/main`, senza commit locali in sospeso né branch aperti: il backend GenAI è **mergiato e pushato**. L'elenco di PR e commit sta nel diario di [RECAP.md](RECAP.md), così qui non serve aggiornarlo a ogni merge.
 - Funzionanti e testati: `/api/cv/parse`, `/api/session/start`, `/api/session/end`.
 - Non ancora implementati: `POST /api/session/turn`, Supabase, auth, TTS/visemi, montaggio `static/`.
 - Test: **88/88 offline**; **91/91 con `--live`** (3 chiamate reali).

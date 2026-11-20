@@ -397,6 +397,15 @@ La fase di studio resta in sola lettura finché l'utente non chiede un'azione: c
 
 Esempio (19/11): l'utente ha chiesto di committare e pushare le modifiche fino ad allora. Fatto su `feature/genai-core`, poi PR #1 mergiata in `main`.
 
+### 5.13 Lo stato del remoto si verifica sul remoto
+
+`git branch -a` mente quando i ref sono stantii. Il 20/11 il repository locale mostrava `main` a `2cc7462` e due branch che su GitHub non esistevano più: il `fetch` falliva con `SEC_E_NO_CREDENTIALS` e nessuno aggiornava i ref. La verità sta su GitHub (`GET /repos/{owner}/{repo}/git/refs`), non nel locale.
+
+- `SEC_E_NO_CREDENTIALS` non è un problema del repo: le operazioni git le fa l'utente nel suo terminale.
+- Su OneDrive `git fetch --prune` può chiedere più volte `Deletion of directory ... failed`: rispondere **`n`**, poi `git update-ref -d <ref>` per i ref rimasti. Sono reparse point di OneDrive, non branch veri.
+- **Preferenza dell'utente:** branch, PR, merge e cancellazione branch si fanno dal **sito GitHub**; il terminale serve solo per `pull`/`push` dei file che stanno sul disco (il sito non li vede finché non sono pushati).
+- **Lo stato si scrive in un punto solo:** la sezione "Stato attuale" del README e il diario del RECAP. Ripetere hash, date e numeri di PR in cinque file è il modo più rapido per farli divergere.
+
 ---
 
 ## 6. I test: come funzionano e cosa coprono
@@ -428,7 +437,7 @@ Servono entrambi: il crash test non dimostra che l'auto parte; il giro su strada
 | **6. Reporter** | Overall, stats precedenti, sticky, reset, 3 opzioni, metrica che batte l'overall, soglia 7.4/7.5 | chiarezza 7.5 con overall basso → paura superata | È la regola nuova: conta la competenza specifica |
 | **7. Modelli e API** | Pydantic, `TurnRequest`/`TurnResponse`, `/start`, `/end`, `422/503/500`, `turnId` univoco, OpenAPI, CORS | profilo invalido → 422; LLM giù → 503 | Il frontend riceve errori chiari, non crash |
 | **8. CV** | PDF → testo → JSON, PDF vuoto/corrotto, limite 5 MB, endpoint 200/415/400/413/503/500 | PDF valido → `{"cv_json": ...}` | Il CV non deve far crashare il server |
-| **9. Config e documenti** | `requirements.txt` UTF-8 e dipendenze, `.env.example`, `.gitignore`, i 4 documenti, input | niente `google-generativeai`, niente Gemini 3.8 | Il progetto si installa e i documenti sono allineati |
+| **9. Config e documenti** | `requirements.txt` UTF-8 e dipendenze, `.env.example`, `.gitignore`, i 5 documenti (`AGENTS.md` compreso), input | niente `google-generativeai`, niente Gemini 3.8 | Il progetto si installa e i documenti sono allineati |
 | **10. LIVE** (solo `--live`) | Gemini vero: domanda reale, evaluator severo, reporter con LLM | risposta povera → 4/1/1 | Dimostra che il collegamento con l'LLM funziona davvero |
 
 ### 6.4 Se un test fallisce
@@ -492,7 +501,7 @@ Per verificare la logica e forzare casi difficili (503, timeout, JSON rotto, PDF
 Per non rompere `main` e poter fare merge/PR dopo la review. La PR #1 è stata mergiata solo a test verdi.
 
 **Cosa manca ancora?**
-L'endpoint `/turn` (Collega 2), Supabase/auth (Collega 1), TTS/visemi (Collega 2), `sessionId`, frontend (team AR/VR). Dettaglio in [TODO.md](TODO.md).
+L'endpoint `/turn` (Collega 2), Supabase/auth (Collega 1), TTS/visemi (Collega 2), frontend (team AR/VR). Lato Stream 3 restano CI, protezione di `main`, hardening degli input e qualità dei test. Dettaglio in [TODO.md](TODO.md).
 
 **Perché `python-multipart` e `pypdf`?**
 `python-multipart` serve a FastAPI per ricevere l'upload del PDF; `pypdf` a leggerne il testo.

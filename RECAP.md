@@ -57,12 +57,15 @@ README.md, FUNZIONAMENTO.md, RECAP.md, TODO.md
 | 19/11, sera | Consolidamento documenti: da 9 `.md` sparsi a 4 file (README + FUNZIONAMENTO + RECAP + TODO). | — |
 | 19/11, 20:13 | Merge della PR #2: i 4 documenti sono su `main`. | `468fe3b` |
 | 20/11, 00:27 | Contratto `sessionId` (obbligatorio in `/start`, opzionale in `/turn` e `/end`) e merge della PR #3. | `2cc7462` |
+| 20/11, 00:33 | Merge della PR #4: lo stato dei documenti non dipende più dagli hash. | `73e8188` |
+| 20/11 | Merge della PR #5: `AGENTS.md` come quinto documento; `test_enorme.py` accetta il nuovo `.md` e ne limita la dimensione. | `352e7d4` |
+| 20/11 | Allineamento documenti: cinque file, Blocco 0.5 (guardrail) nel TODO, diagnosi dei prompt in §6.9. | — |
 
 ---
 
 ## 4. Changelog file per file (ciclo GenAI)
 
-Rispetto a `3a15197` sono cambiati **27 file: 11 nuovi, 16 modificati**. (I documenti di allora sono oggi confluiti nei 4 file attuali: vedi sezione 10.)
+Rispetto a `3a15197` sono cambiati **27 file: 11 nuovi, 16 modificati**. (I documenti di allora sono oggi confluiti nei 5 file attuali: vedi sezione 10.)
 
 | File | Stato | Cosa è cambiato rispetto a `3a15197` |
 |---|---|---|
@@ -85,7 +88,7 @@ Rispetto a `3a15197` sono cambiati **27 file: 11 nuovi, 16 modificati**. (I docu
 | `test_int_eval.py` | Modificato | Passa `profilo_soft_skill` (non più `paura_colloquio`/`reazione_problema`/`paura_fallimento`); exit code 1 in caso di errore; UTF-8. |
 | `test_interviewer.py` | Modificato | Passa `profilo_soft_skill` (non più `soft_skill`); exit code 1; UTF-8. |
 | `test_sistema.py` | Modificato | Firma aggiornata, profilo ufficiale, exit code 1 se un test fallisce, UTF-8. |
-| Documenti | Modificati | README, funzionamento, piano, recap, changelog, guida, handoff, regole, split: **oggi tutti confluiti nei 4 file attuali**. |
+| Documenti | Modificati | README, funzionamento, piano, recap, changelog, guida, handoff, regole, split: **oggi tutti confluiti nei 5 file attuali**. |
 
 ### File rimasti invariati
 
@@ -180,7 +183,7 @@ L'analisi iniziale (18/11, in sola lettura) doveva trovare **3 errori**; ne sono
 | Auth | nickname + PIN 4 cifre, hash bcrypt, JWT breve, rate limit | PIN corto → serve protezione | PIN in chiaro o senza rate limit |
 | Test | offline con mock + live a parte | veloce, gratis, deterministico | solo test live (quota e lentezza) |
 | Git | branch + PR verso `main` | non rompere `main`, review tra pari | commit diretti su `main` |
-| Documenti | 4 file stabili | 9 file duplicavano le stesse informazioni | un `.md` per ogni sessione (illeggibile) |
+| Documenti | 5 file stabili: `AGENTS.md` (regole) + 4 di progetto | 9 file duplicavano le stesse informazioni | un `.md` per ogni sessione (illeggibile) |
 
 ### 6.2 Catena LLM in dettaglio
 
@@ -270,13 +273,26 @@ Le chiavi già usate dal frontend (`overall_previous`, `overall_current`, `stats
 - Tre test live separati, attivati con `--live`: dimostrano che il collegamento reale funziona (domanda, valutazione severa, report).
 - Test dedicati più piccoli (`test_reporter.py`, `test_sistema.py`, ...) per debug mirato.
 - Le asserzioni usano frammenti distintivi, mai singole lettere (regola 5.8 di [FUNZIONAMENTO.md](FUNZIONAMENTO.md#58-un-test-che-asserisce-una-lettera-non-prova-niente)).
-- I test dei documenti controllano che i 4 file contengano i concetti chiave: se si aggiorna un documento, quei test restano la rete di sicurezza.
+- I test dei documenti controllano che i 5 file contengano i concetti chiave: se si aggiorna un documento, quei test restano la rete di sicurezza.
 
 ### 6.8 Git e documenti
 
 - Si lavora su branch (`feature/genai-core` per il ciclo GenAI), PR verso `main`, review.
 - `.env` e `venv/` non entrano mai in git.
 - I documenti sono stati consolidati: un file per funzione (panoramica, didattica, diario, task) invece di un file per sessione di lavoro. Meno duplicazione, meno rischio che uno resti indietro.
+
+### 6.9 Diagnosi dei prompt (rimandata)
+
+Analisi in sola lettura del 20/11: i prompt funzionano, ma hanno quattro difetti concreti. **Nessuna modifica applicata**: il piano è stato rimandato su richiesta dell'utente.
+
+| # | Problema | Evidenza |
+|---|---|---|
+| 1 | **Evaluator senza rubrica**: le fasce 1-10 non sono definite, solo "risposta povera → 1-3" | `agenti/evaluator.py`, prompt; il test live accetta `media <= 6` mentre il prompt chiede 1-3 |
+| 2 | **Interviewer senza numero di domanda né copertura dei temi**: non sa a che punto è il colloquio e può insistere su un solo tema | `agenti/interviewer.py`, `user_prompt` |
+| 3 | **Reporter senza limiti di lunghezza** per `badges`, `improvements`, `final_tip` | `agenti/reporter.py`, prompt |
+| 4 | **`test_int_eval.py` senza assert**: stampa soltanto, quindi non è un test | `test_int_eval.py`, funzione `main` |
+
+Piano proposto e non eseguito, in tre commit separati: rubrica dell'Evaluator (fasce esplicite + soglia coerente col test live), Interviewer con numero di domanda e temi coperti, limiti di lunghezza nel Reporter. Il quarto punto va deciso a parte: o `test_int_eval.py` diventa un test con assert, o si rinomina `demo_int_eval.py` aggiornando i riferimenti.
 
 ---
 
@@ -311,7 +327,7 @@ Il **88/88 offline è verificato sul codice attuale**; il **91/91 live** è l'ul
 | **CV** | Nessun endpoint | `POST /api/cv/parse`: PDF max 5 MB → `cv_json` con `pypdf` + LLM |
 | **Dipendenze** | `requirements.txt` in UTF-16, mancava `google-genai` | UTF-8, `google-genai`, `pypdf`, `python-multipart` |
 | **Test** | Firme vecchie, test rotti | Test allineati, `test_reporter.py` e `test_enorme.py` (88 offline / 91 live) |
-| **Documenti** | README e funzionamento vecchi, 9 file sparsi | 4 file stabili: README, FUNZIONAMENTO, RECAP, TODO |
+| **Documenti** | README e funzionamento vecchi, 9 file sparsi | 5 file stabili: `AGENTS.md`, README, FUNZIONAMENTO, RECAP, TODO |
 
 ---
 
@@ -355,7 +371,7 @@ Nessun contenuto è andato perso: i 9 `.md` precedenti sono stati distribuiti co
 | Vecchio file | Dove è finito |
 |---|---|
 | `funzionamento.md` | `FUNZIONAMENTO.md` §2 (file per file), §3 (flusso), §4 (concetti), §7-8 (pitch e Q&A) |
-| `regole_di_lettura_del_codice.md` | `FUNZIONAMENTO.md` §5 (le 12 regole, aggiornate al merge) |
+| `regole_di_lettura_del_codice.md` | `FUNZIONAMENTO.md` §5 (le 13 regole, aggiornate al merge) |
 | `guida_test_e_cambiamenti.md` | `FUNZIONAMENTO.md` §6 (test, mock vs live), §7 (pitch); `README.md` (comandi); `RECAP.md` §4, §8 |
 | `piano_lavoro_18_11.md` | `RECAP.md` §5 (errori), §6 (decisioni), §7 (test); `TODO.md` §8 (workflow) |
 | `recap_18_11.md` (storico) | `RECAP.md` §1, §4 e §6 (stato e roadmap storica) e `TODO.md` (attività ancora aperte) |
@@ -368,10 +384,15 @@ Nessun contenuto è andato perso: i 9 `.md` precedenti sono stati distribuiti co
 
 ## 11. Da fare adesso
 
-Il dettaglio è in [TODO.md](TODO.md). In breve:
+Il dettaglio è in [TODO.md](TODO.md). In breve, in quest'ordine:
 
-1. `sessionId` e contratto congelato (Stream 3).
-2. Supabase + auth + `update-fear` (Collega 1).
-3. `/turn` + TTS + visemi (Collega 2).
-4. `/end` server-side e test integrati (tutti).
-5. Frontend AR/VR, demo e merge (team + Stream 3).
+1. **CI su GitHub Actions** (`test.yml`: push e PR, Python 3.14 con fallback 3.13, `pip install -r requirements.txt`, `python test_enorme.py`) e poi **protezione di `main`** con il check obbligatorio: è ciò che rende vera la regola "solo a test verdi".
+2. **Hardening degli input**: `max_length` su `trascrizione`, `domanda` e `cv_json` nei modelli di `routers/sessions.py`, con test dedicati.
+3. **Igiene del repository**: `.gitattributes` (`* text=auto`) e `.editorconfig` UTF-8, per chiudere i due incidenti già visti (freeze UTF-16, fine riga incoerenti).
+4. **Qualità dei test**: `test_int_eval.py` senza assert e `test_api_full.py` che esce 0 anche quando il server non è attivo.
+5. **Baseline di demo**: server avviato, `test_api_full.py`, `/docs`, CORS e i codici 422/415/503 salvati come output attesi.
+6. **Handoff del contratto al team AR/VR**: `sessionId`, `audioUrl`, `visemi {"time": ms, "visemeId": int}`, `metrica_paura`, `prossime_paure`.
+7. **Integrazione** di Collega 2 (`/turn`, TTS) e Collega 1 (DB, auth, CV), poi frontend AR/VR, con review e merge a test verdi.
+8. **Prompt tuning** (vedi §6.9): rimandato, non è bloccante.
+
+Bloccato e da non iniziare ora: il punto 7 dipende dalle PR dei colleghi.
