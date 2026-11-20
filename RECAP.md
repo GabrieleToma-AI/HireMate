@@ -45,6 +45,7 @@ La struttura file per file sta nella tabella del [README](README.md#️-struttur
 | 20/11 | Protezione di `main`: PR obbligatoria e check `suite offline` richiesto; prova del rosso (84/88 con la soglia a 8.0) e prova del blocco (pulsante di merge grigio). | — |
 | 20/11, 15:18 | Merge della PR #11: limiti di input (2000/500/4096), nuova suite `test_hardening_input.py`, CI spostata su Windows. | `d227db2` |
 | 20/11, 15:28 | Merge della PR #12: assert e codici di uscita nei test live, guardia `CASI_ATTESI` sul numero di casi. | `81d4768` |
+| 20/11 | Test di integrità del diario: tre colonne, ordine cronologico e soglia `RIGHE_DIARIO_MINIME` (append-only). | — |
 
 ---
 

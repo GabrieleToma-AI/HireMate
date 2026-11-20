@@ -65,7 +65,10 @@ logging.disable(logging.CRITICAL)
 LIVE = "--live" in sys.argv
 # Guardiano contro i test che spariscono: ogni nuovo caso registrato con run.caso()
 # cambia questo numero. Se il totale non torna, il riepilogo esce con codice 1.
-CASI_ATTESI = 88
+CASI_ATTESI = 89
+# Il diario del RECAP e' append-only: quando aggiungi una riga, alza questo numero.
+# Serve a intercettare una riga cancellata, che nessun altro test controlla.
+RIGHE_DIARIO_MINIME = 22
 
 BASE = Path(__file__).resolve().parent
 
@@ -1243,6 +1246,44 @@ async def main() -> int:
         ], documenti
         assert (BASE / "AGENTS.md").stat().st_size < 65536, "AGENTS.md supera il budget di DSH"
 
+    def test_diario():
+        testo = (BASE / "RECAP.md").read_text(encoding="utf-8")
+        righe = []
+        for riga in testo.splitlines():
+            if not riga.startswith("| "):
+                continue
+            celle = [c.strip() for c in riga.strip("|").split("|")]
+            if len(celle) < 3:
+                continue
+            data = celle[0]
+            if not (
+                len(data) >= 5
+                and data[2] == "/"
+                and data[:2].isdigit()
+                and data[3:5].isdigit()
+            ):
+                continue
+            righe.append((riga, celle))
+
+        assert len(righe) >= RIGHE_DIARIO_MINIME, (
+            f"diario con {len(righe)} righe, minimo {RIGHE_DIARIO_MINIME}: "
+            "una riga e' stata cancellata?"
+        )
+
+        precedente = None
+        for riga, celle in righe:
+            assert len(celle) == 3, f"riga del diario con {len(celle)} colonne: {riga}"
+            data, cosa, commit = celle
+            assert cosa, f"riga senza descrizione: {riga}"
+            assert (commit.startswith("`") and commit.endswith("`")) or commit == "—", (
+                f"commit non valido (hash tra backtick oppure —): {riga}"
+            )
+            giorno, mese = int(data[:2]), int(data[3:5])
+            assert precedente is None or (mese, giorno) >= precedente, (
+                f"data fuori ordine cronologico: {riga}"
+            )
+            precedente = (mese, giorno)
+
     def test_input_registrazione():
         testo = (BASE / "input_registrazione.txt").read_text(encoding="utf-8")
         assert "Non ho abbastanza esperienza tecnica per il ruolo" in testo
@@ -1262,6 +1303,7 @@ async def main() -> int:
     await run.caso("FUNZIONAMENTO.md aggiornato", test_funzionamento)
     await run.caso("RECAP.md aggiornato", test_recap)
     await run.caso("TODO.md aggiornato e documenti consolidati", test_todo)
+    await run.caso("Diario: righe ben formate, ordine e conteggio minimo", test_diario)
     await run.caso("input_registrazione.txt allineato", test_input_registrazione)
     await run.caso("Nessun riferimento a Gemini 3.8 nel codice", test_nessun_38_nel_codice)
 
