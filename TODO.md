@@ -2,7 +2,7 @@
 
 Questo è **l'unico documento dei task** di HireMate: sostituisce `split_lavoro.md`, `handoff.md` e i TO DO sparsi nei vecchi recap.
 
-- **Stato di partenza:** `main` è allineata a `origin/main` (ultima PR mergiata: #3, contratto `sessionId`); i documenti sono consolidati nei 4 file attuali.
+- **Stato di partenza:** `main` è allineata a `origin/main`; i documenti sono consolidati nei 5 file attuali e il contratto `sessionId` è mergiato.
 - **Regola:** si spunta una casella solo quando il criterio di accettazione è soddisfatto e i test sono verdi.
 - **Legenda proprietari:** `[C1]` Collega 1 (Stream 1), `[C2]` Collega 2 (Stream 2), `[S3]` Stream 3 (GenAI core), `[AR/VR]` team frontend.
 
@@ -22,7 +22,7 @@ Questo è **l'unico documento dei task** di HireMate: sostituisce `split_lavoro.
 - API: validazione Pydantic, `turnId` univoco, CORS, errori 400/422/503/500.
 - `TurnRequest` / `TurnResponse` / `Turno` pronti (manca solo l'endpoint `/turn`).
 - Test: `test_enorme.py` 88/88 offline; 91/91 con `--live`. Gli altri test sono verdi.
-- Documenti: i 4 file attuali (`README.md`, `FUNZIONAMENTO.md`, `RECAP.md`, `TODO.md`).
+- Documenti: i 5 file attuali (`AGENTS.md`, `README.md`, `FUNZIONAMENTO.md`, `RECAP.md`, `TODO.md`).
 
 ### Non fatto (oggetto di questo TODO)
 
@@ -30,10 +30,14 @@ Questo è **l'unico documento dei task** di HireMate: sostituisce `split_lavoro.
 - Auth nickname + PIN (hash bcrypt) e `PATCH /api/users/update-fear`.
 - Endpoint `POST /api/session/turn`.
 - TTS Azure + visemi, anche per la prima domanda.
-- `sessionId` condiviso tra `/start`, `/turn`, `/end`.
+- `sessionId` propagato a `/turn` e `/end` quando esisterà il DB (oggi `/start` lo genera, gli altri lo accettano opzionale).
 - `/end` che legge valutazioni e report dal DB (oggi si fida del client).
 - Frontend (team AR/VR).
 - Review delle PR nuove e merge su `main`.
+- CI su GitHub Actions e protezione di `main` (oggi nulla impedisce un merge rosso).
+- Hardening degli input (`max_length` su trascrizione, domanda, `cv_json`).
+- Igiene del repository (`.gitattributes`, `.editorconfig`).
+- Test senza assert (`test_int_eval.py`) e `test_api_full.py` che esce 0 con server spento.
 
 ---
 
@@ -48,6 +52,17 @@ Vista d'insieme, in ordine di milestone. Il dettaglio per persona è nelle sezio
 - [x] Congelare le forme JSON finali (sezione 2) e aggiornare `README.md` / `FUNZIONAMENTO.md`.
 - [ ] Comunicare a Collega 1 e Collega 2 di branchare da `main` e di usare i modelli senza duplicarli.
 - [x] Aprire la PR del contratto.
+
+### Blocco 0.5 — Guardrail (prima di integrare) `[S3]`
+
+Sono le cose che rendono sicuri tutti gli altri blocchi: prima la CI, poi la protezione del branch.
+
+- [ ] **CI su GitHub Actions**: `.github/workflows/test.yml` su push e PR; Python 3.14 con fallback 3.13; `pip install -r requirements.txt`; `python test_enorme.py`. Verde su una PR di prova, rosso se si rompe un test di proposito.
+- [ ] **Protezione di `main`**: check della CI obbligatorio, merge solo via PR. Oggi `main` non è protetta.
+- [ ] **Hardening degli input**: `max_length` su `trascrizione`, `domanda` e `cv_json` nei modelli di `routers/sessions.py` (es. 2000 caratteri) → `422`, con test dedicati.
+- [ ] **Igiene del repository**: `.gitattributes` (`* text=auto`) e `.editorconfig` (UTF-8), per chiudere i due incidenti già visti: freeze UTF-16 e fine riga incoerenti.
+- [ ] **Qualità dei test**: `test_int_eval.py` senza assert (o lo si rende un test vero, o diventa `demo_int_eval.py`) e `test_api_full.py` che oggi esce 0 anche quando il server non è attivo.
+- [ ] **Baseline di demo**: server avviato, `test_api_full.py`, `/docs`, CORS e codici 422/415/503 con output attesi salvati come riferimento.
 
 ### Blocco 1 — Fondamenta (in parallelo) `[C1]` `[C2]` `[S3]`
 
@@ -309,7 +324,7 @@ Il server legge dal DB valutazioni, profilo e report precedente. In transizione 
 ### P0 — Da fare subito
 
 1. **Allineamento e PR**
-   - `main` è allineata a `origin/main`; le PR #1, #2 e #3 sono mergiate.
+   - `main` è allineata a `origin/main`; contratto `sessionId`, documenti e `AGENTS.md` sono mergiati.
    - Comunicazione a Collega 1 e 2: partono da `main` e importano i modelli da `routers/sessions.py`.
 2. **`sessionId` e contratto**
    - `sessionId` è in `/start`; `TurnRequest`/`EndSessionRequest` lo accettano come opzionale; i campi legacy restano per la transizione.
@@ -324,11 +339,11 @@ Il server legge dal DB valutazioni, profilo e report precedente. In transizione 
 ### P1 — Integrazione e qualità
 
 - [ ] **Test reali utente scarso**: una risposta vuota/povera deve dare metriche basse; con `/turn` la valutazione è server-side, non più fidata dal client.
-- [ ] **Prompt**: varia le domande, evita ripetizioni, usa il CV, calibra la severità dell'Evaluator.
+- [ ] **Prompt** (diagnosi in [RECAP §6.9](RECAP.md#69-diagnosi-dei-prompt-rimandata)): rubrica esplicita per l'Evaluator, numero di domanda e copertura dei temi per l'Interviewer, limiti di lunghezza per il Reporter. Rimandato: non è bloccante.
 - [ ] **Test**: estendi `test_enorme.py` con `sessionId`, `/turn` (mock), DB/auth (mock), TTS (mock); mantieni 88/88 offline; live quando la modifica tocca l'LLM.
 - [ ] **Sicurezza**: niente chiavi, CORS, limiti di input, PIN hash, rate limit, errori generici.
 - [ ] **Contratto frontend**: conferma con AR/VR `sessionId`, `audioUrl`, `visemes`, `metrica_paura`, `prossime_paure`.
-- [ ] **Documenti**: aggiorna i 4 file a ogni cambio di contratto.
+- [ ] **Documenti**: aggiorna i 5 file a ogni cambio di contratto.
 
 ### P2 — Chiusura
 
@@ -391,6 +406,7 @@ Serve al backend sapere **cosa** il frontend si aspetta; questi punti vanno conc
 6. **Test prima della PR**: `python test_enorme.py`; per le parti nuove, test dedicati.
 7. **Contratto API congelato** prima di scrivere codice (sezione 2).
 8. **Lingua e registro**: italiano semplice e didattico; ogni concetto tecnico spiegato con *cos'è, perché serve, cosa succede senza*. Il progetto è scolastico: deve restare corto, completo e spiegabile al professore.
+9. **Documenti**: in root ci sono esattamente **5 `.md`** (`AGENTS.md` + i 4 di progetto). Il test della sezione 9 confronta la lista esatta: un sesto `.md` lo fa fallire.
 
 ### Workflow quando viene chiesta una modifica
 
@@ -415,6 +431,7 @@ Serve al backend sapere **cosa** il frontend si aspetta; questi punti vanno conc
 | Blocco | Contenuto | Chi | Tempo indicativo |
 |---|---|---|---|
 | **Blocco 0 — Sbloccare** | Allineamento, contratto `sessionId`, PR | Stream 3 | 2-3 ore |
+| **Blocco 0.5 — Guardrail** | CI, protezione `main`, hardening, igiene, qualità test, baseline | Stream 3 | ~3 ore |
 | **Blocco 1 — Fondamenta** | Schema Supabase + client + auth; spike TTS + `/turn` mock; test estesi | C1, C2, S3 (parallelo) | 2-3 giorni |
 | **Blocco 2 — Integrazione** | CV salvato, `/end` dal DB; `/turn` reale, audio su `/start` | C1, C2, S3 | 3-4 giorni |
 | **Blocco 3 — Chiusura** | End-to-end 6 turni, frontend, demo, documenti, merge | Tutti | 1-2 giorni |
@@ -426,6 +443,8 @@ Serve al backend sapere **cosa** il frontend si aspetta; questi punti vanno conc
 ## 10. Rischi e decisioni aperte
 
 - **Base allineata:** `main` è allineata a `origin/main`; ogni stream brancha da lì per non divergere.
+- **Nessun guardrail automatico:** senza CI un test rosso può essere mergiato, e `main` non è protetta. Sono i primi due task del Blocco 0.5.
+- **OneDrive:** `git fetch --prune` può fermarsi su `Deletion of directory ... failed` (directory-reparse). Risposta `n`, poi `git update-ref -d <ref>`; non è corruzione del repo.
 - **DeepSeek:** è a pagamento e resta l'ultima risorsa; monitorare chiave e costi, non usarlo nei test di massa.
 - **Contratto `sessionId`:** va congelato prima di DB e `/turn`, altrimenti si sovrascrivono.
 - **Auth:** PIN a 4 cifre → bcrypt + rate limit obbligatori; token JWT breve.
@@ -450,3 +469,4 @@ Serve al backend sapere **cosa** il frontend si aspetta; questi punti vanno conc
 7. [ ] Modale "Promozione Paura" → scelta nuova paura → `PATCH update-fear`.
 8. [ ] Mostrare `python test_enorme.py` 88/88; `--live` quando serve dimostrare l'LLM reale.
 9. [ ] Mostrare branch/PR e i documenti aggiornati.
+10. [ ] Mostrare la CI verde su una PR di prova (quando il Blocco 0.5 è fatto).
