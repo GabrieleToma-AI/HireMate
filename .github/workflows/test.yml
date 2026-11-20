@@ -16,8 +16,8 @@ concurrency:
 jobs:
   test:
     name: suite offline
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: windows-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -37,3 +37,6 @@ jobs:
 
       - name: Suite offline (nessuna quota)
         run: python test_enorme.py
+
+      - name: Suite hardening input (nessuna quota)
+        run: python test_hardening_input.py

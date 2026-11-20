@@ -1,8 +1,10 @@
+import json
 import logging
+from typing import Annotated
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field, field_validator
+from pydantic import AfterValidator, BaseModel, Field, field_validator
 
 # Importiamo gli agenti e le eccezioni
 from agenti.interviewer import genera_domanda
@@ -20,6 +22,28 @@ router = APIRouter()
 # Numero indicativo di domande: il colloquio si chiude quando il Reporter
 # ha abbastanza informazioni, non con un rifiuto brusco a tempo.
 DOMANDE_PER_COLLOQUIO = 6
+
+# Limiti di input: proteggono quota e latenza da payload abnormi.
+# Il CV viaggia come JSON nel payload, quindi il limite e' sui byte serializzati.
+MAX_TRASCRIZIONE = 2000
+MAX_DOMANDA = 500
+MAX_CV_JSON = 4096
+
+
+def valida_cv_json(valore: dict | None) -> dict | None:
+    """Rifiuta un cv_json oltre MAX_CV_JSON byte (UTF-8)."""
+    if valore is None:
+        return None
+    dimensione = len(json.dumps(valore, ensure_ascii=False).encode("utf-8"))
+    if dimensione > MAX_CV_JSON:
+        raise ValueError(
+            f"cv_json troppo grande: {dimensione} byte (massimo {MAX_CV_JSON})"
+        )
+    return valore
+
+
+# Un solo tipo riusabile: il limite vale per /start e per /turn.
+CvJson = Annotated[dict | None, AfterValidator(valida_cv_json)]
 
 # ==========================================
 # MODELLI PYDANTIC (I "Contratti" dei dati)
@@ -63,7 +87,7 @@ class ValutazioneCompleta(Valutazione):
 class SessionStartRequest(BaseModel):
     corso: str
     profilo_soft_skill: ProfiloSoftSkill
-    cv_json: dict | None = None
+    cv_json: CvJson = None
 
     @field_validator("corso")
     @classmethod
@@ -100,17 +124,17 @@ class EndSessionResponse(BaseModel):
 
 # Contratto per Collega 2: l'endpoint POST /api/session/turn usera' questi modelli.
 class Turno(BaseModel):
-    domanda: str
-    trascrizione: str
+    domanda: str = Field(max_length=MAX_DOMANDA)
+    trascrizione: str = Field(max_length=MAX_TRASCRIZIONE)
 
 class TurnRequest(BaseModel):
     # Opzionale in transizione: senza DB la cronologia viaggia ancora nel payload.
     sessionId: str | None = None
     corso: str
     profilo_soft_skill: ProfiloSoftSkill
-    cv_json: dict | None = None
-    domanda: str
-    trascrizione: str
+    cv_json: CvJson = None
+    domanda: str = Field(max_length=MAX_DOMANDA)
+    trascrizione: str = Field(max_length=MAX_TRASCRIZIONE)
     cronologia: list[Turno] = Field(default_factory=list)
     # Collega 2: passare [t.model_dump() for t in request.cronologia] a genera_domanda.
 
