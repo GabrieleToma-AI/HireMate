@@ -1220,15 +1220,17 @@ async def main() -> int:
         testo = (BASE / "TODO.md").read_text(encoding="utf-8")
         for atteso in ("sessionId", "/turn", "Collega 2"):
             assert atteso in testo, atteso
-        # I documenti sono consolidati: 4 file in root, niente cartella sparsa.
+        # Documenti consolidati: 4 file di progetto + AGENTS.md per gli agenti.
         assert not (BASE / "processi_spiegati").exists(), "la vecchia cartella deve essere rimossa"
         documenti = sorted(p.name for p in BASE.glob("*.md"))
         assert documenti == [
+            "AGENTS.md",
             "FUNZIONAMENTO.md",
             "README.md",
             "RECAP.md",
             "TODO.md",
         ], documenti
+        assert (BASE / "AGENTS.md").stat().st_size < 65536, "AGENTS.md supera il budget di DSH"
 
     def test_input_registrazione():
         testo = (BASE / "input_registrazione.txt").read_text(encoding="utf-8")
