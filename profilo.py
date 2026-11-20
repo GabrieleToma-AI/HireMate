@@ -31,4 +31,4 @@ METRICA_PER_PAURA = {
     "Non saper parlare di me stesso": "chiarezza",
 }
 
-SOGLIA_METRICA_PAURA = 7.5
+SOGLIA_METRICA_PAURA = 8
