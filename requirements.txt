@@ -11,4 +11,7 @@ httpx==0.28.1
 python-multipart==0.0.34
 pypdf==7.1.1
 
-# Nota: Supabase verrà aggiunto da Collega 1 quando creerà database/supabase_client.py
+# Collega 1: Database Supabase (servizio reale), bcrypt per i PIN, PyJWT per i token JWT brevi
+supabase==2.34.1
+bcrypt==5.0.0
+PyJWT==2.15.1

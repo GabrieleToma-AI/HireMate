@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from routers import cv, sessions  # o 'session', a seconda di come l'hai chiamato
+from routers import cv, sessions, users  # sessions/users: Stream 3 (users) e Collega 1
 
 # Inizializziamo l'app FastAPI con i metadati per la Swagger UI
 app = FastAPI(
@@ -28,6 +28,7 @@ app.add_middleware(
 
 app.include_router(sessions.router, prefix="/api/session", tags=["Session"])
 app.include_router(cv.router, prefix="/api/cv", tags=["CV"])
+app.include_router(users.router, prefix="/api/users", tags=["Users"])  # Collega 1
 
 # Endpoint base di test (Root)
 @app.get("/")

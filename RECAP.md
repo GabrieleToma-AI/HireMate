@@ -46,6 +46,12 @@ La struttura file per file sta nella tabella del [README](README.md#️-struttur
 | 20/11, 15:18 | Merge della PR #11: limiti di input (2000/500/4096), nuova suite `test_hardening_input.py`, CI spostata su Windows. | `d227db2` |
 | 20/11, 15:28 | Merge della PR #12: assert e codici di uscita nei test live, guardia `CASI_ATTESI` sul numero di casi. | `81d4768` |
 | 20/11 | Test di integrità del diario: tre colonne, ordine cronologico e soglia `RIGHE_DIARIO_MINIME` (append-only). | — |
+| 25/11 | **Database e Auth (Collega 1)**: DDL `database/schema.sql` (4 tabelle: `users`, `sessions`, `turns`, `fears_history`) e client swappabile (`database/client.py`, `supabase_client.py`, `fake_client.py`) — per rendere il progetto persistente e autenticato. | — |
+| 25/11 | Router auth `routers/users.py`: register/login (PIN bcrypt, JWT breve con TTL 24h), `PATCH /api/users/update-fear`, `GET /api/users/me` — sportello dell'utente, come da TODO §3. | — |
+| 25/11 | Persistenza CV: `POST /api/cv/parse` con `user_id` opzionale salva `cv_json` in `users.cv_json` — il CV diventa un dato reuse, non solo restituito. | — |
+| 25/11 | Test offline `test_db.py` (9), `test_auth.py` (11) con FakeDbClient e TestClient, stile delle suite; `main.py` include il router `users`. | — |
+| 25/11 | **File creati**: `database/schema.sql`, `database/__init__.py`, `database/client.py`, `database/supabase_client.py`, `database/fake_client.py`, `routers/users.py`, `test_db.py`, `test_auth.py`. | — |
+| 25/11 | **File modificati**: `routers/cv.py` (salva `cv_json` in `users.cv_json` con `user_id` opzionale), `main.py` (include `users.router`), `.env.example` (righe SUPABASE_URL/SUPABASE_KEY/JWT_SECRET/JWT_TTL_SECONDI), `requirements.txt` (supabase/bcrypt/PyJWT), `RECAP.md`, `FUNZIONAMENTO.md`. | — |
 
 ---
 
