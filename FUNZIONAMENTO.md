@@ -542,3 +542,27 @@ Creatività dove serve variare le domande, determinismo dove serve ripetibilità
 
 **Come si legge il codice senza perdersi?**
 Dall'esterno verso l'interno: `main.py` → router → agente → `llm.py` → dati in `corsi.py`/`profilo.py`. Le regole di sezione 5 valgono per ogni modifica.
+
+---
+
+## 9. I nuovi file del Database e dell'Auth (Collega 1)
+
+I file d'oggi: `database/schema.sql`, `database/client.py`, `database/supabase_client.py`, `database/fake_client.py`, `routers/users.py`, più modifiche a `routers/cv.py` e `main.py`.
+
+### 9.1 `database/schema.sql` — I 4 nuclei del progetto
+DDL versionato: tabelle `users` (nickname univoco, `pin_hash`, profilo, `cv_json`), `sessions`, `turns`, `fears_history`. Indici su `nickname`, `user_id`, `session_id`. Senza DB nessuna di queste viene usata (il sistema è legacy-completo fino a `/turn` e auth reale).
+
+### 9.2 `database/client.py` — L'interfaccia swappabile
+Astrazione `DbClient` con 9 metodi: `find_user_by_nickname`, `create_user`, `save_user_cv`/`get_user_cv`, `create_session`, `save_turn`/`get_turns`, `update_user_fear`, `save_fear_history`. I router usano solo questa interfaccia, così si può sostituire il client reale con quello finto nei test.
+
+### 9.3 `database/supabase_client.py` — Il client reale
+Implementa `DbClient` con `supabase.create_client(SUPABASE_URL, SUPABASE_KEY)` e PostgREST (`.insert(...)`, `.select("*").eq("nickname", ...).limit(1)`, `.update({...}).eq("id", ...)`). Senza chiavi al momento di import fa `RuntimeError` (segreto lato server).
+
+### 9.4 `database/fake_client.py` — Il finto client per i test
+`FakeDbClient(DbClient)` con appoggio in memoria: nessuna chiave, nessuna rete, dati volatile. Usato da `test_db.py` e `test_auth.py`.
+
+### 9.5 `routers/users.py` — Sportello dell'utente
+Endpoint: `POST /api/users/register` (nickname univoco → 422 se esiste, PIN a 4 cifre, `{user_id, token}`), `POST /api/users/login` (401 generico, rate limit con backoff esponenziale su 3 errori), `PATCH /api/users/update-fear` (Bearer, 422 se paura fuori da `PAURE_DISPONIBILI`, aggiorna profilo e scrive riga in `fears_history`), `GET /api/users/me` (profilo attuale + `cv_json`). PIN solo in hash bcrypt (`_hash_pin`).
+
+### 9.6 Modifiche al sistema esistente
+`routers/cv.py`: `POST /api/cv/parse` accetta `user_id` opzionale e, se presente, salva il `cv_json` in `users.cv_json` — contratto legacy invariato. `main.py` include il router `users` (prefisso `/api/users`).
